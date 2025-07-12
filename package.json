@@ -1,0 +1,20 @@
+{
+  "name": "bookmarks",
+  "version": "1.0.0",
+  "description": "```bash $ npm install # or pnpm install or yarn install ```",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build -w",
+    "preview": "vite preview"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vite-plugin-solid": "^2.11.7"
+  },
+  "dependencies": {
+    "solid-js": "^1.9.7"
+  }
+}
