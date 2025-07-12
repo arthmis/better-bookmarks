@@ -5,7 +5,7 @@
   "description": "A minimal Firefox web extension using Manifest V3",
 
   "action": {
-    "default_icon": "./src/assets/bookmark-icon.svg",
+    "default_icon": "./assets/bookmark-icon.svg",
     "default_popup": "/index.html",
     "default_title": "Bookmarks"
   },
