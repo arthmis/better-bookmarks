@@ -10,6 +10,8 @@ interface Collection {
 interface CollectionItemProps {
   collection: Collection;
   level?: number;
+  selectedCollectionId?: string;
+  onSelectCollection?: (id: string) => void;
 }
 
 function CollectionItem(props: CollectionItemProps) {
@@ -21,16 +23,17 @@ function CollectionItem(props: CollectionItemProps) {
   };
 
   const hasChildren = () =>
-    props.collection.subcollections.length > 0 || props.collection.items.length > 0;
+    props.collection.subcollections.length > 0 ||
+    props.collection.items.length > 0;
 
   const totalItemCount = () => {
     let count = props.collection.items.length;
-    props.collection.subcollections.forEach(sub => {
+    props.collection.subcollections.forEach((sub) => {
       count += sub.items.length;
       // Recursively count items in subcollections
       const countSubItems = (collection: Collection): number => {
         let subCount = collection.items.length;
-        collection.subcollections.forEach(subCol => {
+        collection.subcollections.forEach((subCol) => {
           subCount += countSubItems(subCol);
         });
         return subCount;
@@ -45,12 +48,17 @@ function CollectionItem(props: CollectionItemProps) {
       <div
         class="collection-header"
         style={{ "padding-left": `${level() * 20}px` }}
-        onClick={toggleExpanded}
+        classList={{
+          selected: props.selectedCollectionId === props.collection.id,
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          props.onSelectCollection?.(props.collection.id);
+          toggleExpanded();
+        }}
       >
         <span class="collection-toggle">
-          <Show when={hasChildren()}>
-            {isExpanded() ? "▼" : "▶"}
-          </Show>
+          <Show when={hasChildren()}>{isExpanded() ? "▼" : "▶"}</Show>
         </span>
         <span class="collection-name">{props.collection.name}</span>
         <span class="collection-count">({totalItemCount()})</span>
@@ -59,95 +67,67 @@ function CollectionItem(props: CollectionItemProps) {
       <Show when={isExpanded()}>
         <div class="collection-content">
           {/* Render subcollections */}
-          <For each={props.collection.subcollections}>
-            {(subcollection) => (
-              <CollectionItem
-                collection={subcollection}
-                level={level() + 1}
-              />
-            )}
-          </For>
+          <ul>
+            <For each={props.collection.subcollections}>
+              {(subcollection) => (
+                <li>
+                  <CollectionItem
+                    collection={subcollection}
+                    level={level() + 1}
+                    selectedCollectionId={props.selectedCollectionId}
+                    onSelectCollection={props.onSelectCollection}
+                  />
+                </li>
+              )}
+            </For>
+          </ul>
 
           {/* Render items */}
-          <For each={props.collection.items}>
-            {(item) => (
-              <div
-                class="collection-item-leaf"
-                style={{ "padding-left": `${(level() + 1) * 20 + 20}px` }}
-              >
-                <span class="item-bullet">•</span>
-                <span class="item-name">{item}</span>
-              </div>
-            )}
-          </For>
+          <ul>
+            <For each={props.collection.items}>
+              {(item) => (
+                <li
+                  class="collection-item-leaf"
+                  style={{ "padding-left": `${(level() + 1) * 20 + 20}px` }}
+                >
+                  <span class="item-bullet">•</span>
+                  <span class="item-name">{item}</span>
+                </li>
+              )}
+            </For>
+          </ul>
         </div>
       </Show>
     </div>
   );
 }
 
-export default function Collections() {
-  // Sample data - replace with your actual data source
-  const [collections] = createSignal<Collection[]>([
-    {
-      id: "1",
-      name: "Work",
-      items: ["Meeting Notes", "Project Plans"],
-      subcollections: [
-        {
-          id: "1-1",
-          name: "Development",
-          items: ["Code Reviews", "Bug Reports", "Feature Specs"],
-          subcollections: [
-            {
-              id: "1-1-1",
-              name: "Frontend",
-              items: ["React Components", "CSS Styles"],
-              subcollections: []
-            }
-          ]
-        },
-        {
-          id: "1-2",
-          name: "Marketing",
-          items: ["Campaign Ideas", "Analytics"],
-          subcollections: []
-        }
-      ]
-    },
-    {
-      id: "2",
-      name: "Personal",
-      items: ["Shopping List", "Recipes", "Travel Plans"],
-      subcollections: [
-        {
-          id: "2-1",
-          name: "Hobbies",
-          items: ["Photography Tips", "Gardening Notes"],
-          subcollections: []
-        }
-      ]
-    },
-    {
-      id: "3",
-      name: "Learning",
-      items: ["JavaScript Tutorials", "Design Patterns"],
-      subcollections: []
-    }
-  ]);
+interface CollectionsProps {
+  selectedCollectionId?: string;
+  onSelectCollection?: (id: string) => void;
+  collections: Collection[];
+  onAddCollection?: (name: string) => void;
+}
 
+export default function Collections(props: CollectionsProps) {
   return (
     <div class="collections-panel">
       <div class="collections-header">
         <h3>Collections</h3>
       </div>
-      <div class="collections-list">
-        <For each={collections()}>
+      <ul class="collections-list">
+        <For each={props.collections}>
           {(collection) => (
-            <CollectionItem collection={collection} />
+            <li>
+              <CollectionItem
+                collection={collection}
+                selectedCollectionId={props.selectedCollectionId}
+                onSelectCollection={props.onSelectCollection}
+              />
+            </li>
           )}
         </For>
-      </div>
+      </ul>
 
       <style>{`
         .collections-panel {
@@ -195,6 +175,19 @@ export default function Collections() {
           background-color: #e9e9e9;
         }
 
+        .collection-header.selected {
+          background-color: #007acc;
+          color: white;
+        }
+
+        .collection-header.selected .collection-count {
+          color: rgba(255, 255, 255, 0.8);
+        }
+
+        .collection-header.selected .collection-toggle {
+          color: rgba(255, 255, 255, 0.8);
+        }
+
         .collection-toggle {
           width: 20px;
           font-size: 12px;
@@ -209,6 +202,10 @@ export default function Collections() {
           flex: 1;
           font-weight: 500;
           color: #333;
+        }
+
+        .collection-header.selected .collection-name {
+          color: white;
         }
 
         .collection-count {
@@ -248,3 +245,5 @@ export default function Collections() {
     </div>
   );
 }
+
+export type { Collection };
