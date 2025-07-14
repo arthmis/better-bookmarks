@@ -66,8 +66,37 @@ export default function App() {
       items: [],
       subcollections: [],
     };
+
+    if (selectedCollectionId() === undefined) {
+      try {
+        setCollections([...collections(), newCollection]);
+        await browser.storage.local.set({ collections: collections() });
+        console.log("stored new collection");
+      } catch (error) {
+        // TODO handle error with a toast
+        console.error("Failed to add or update collection:", error);
+      } finally {
+        return;
+      }
+    }
+
+    const updateCollections = (collections: Collection[]): Collection[] => {
+      return collections.map((collection) => {
+        if (collection.id === selectedCollectionId()) {
+          return {
+            ...collection,
+            subcollections: [...collection.subcollections, newCollection],
+          };
+        }
+        return {
+          ...collection,
+          subcollections: updateCollections(collection.subcollections),
+        };
+      });
+    };
+
     try {
-      setCollections([...collections(), newCollection]);
+      setCollections(updateCollections(collections()));
       await browser.storage.local.set({ collections: collections() });
       console.log("stored new collection");
     } catch (error) {
