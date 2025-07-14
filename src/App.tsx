@@ -69,9 +69,7 @@ export default function App() {
 
     if (selectedCollectionId() === undefined) {
       try {
-        setCollections([...collections(), newCollection]);
-        await browser.storage.local.set({ collections: collections() });
-        console.log("stored new collection");
+        await updateAndStoreCollections([...collections(), newCollection]);
       } catch (error) {
         // TODO handle error with a toast
         console.error("Failed to add or update collection:", error);
@@ -96,13 +94,21 @@ export default function App() {
     };
 
     try {
-      setCollections(updateCollections(collections()));
-      await browser.storage.local.set({ collections: collections() });
+      await updateAndStoreCollections(updateCollections(collections()));
       console.log("stored new collection");
     } catch (error) {
       // TODO handle error with a toast
       console.error("Failed to add or update collection:", error);
     }
+  };
+
+  const updateAndStoreCollections = async (
+    collections: Collection[],
+  ): Promise<void> => {
+    setCollections(collections);
+    await browser.storage.local.set({ collections });
+    console.log("stored updated collections");
+    return;
   };
 
   const getCurrentTabUrl = async (): Promise<string | null> => {
@@ -178,8 +184,13 @@ export default function App() {
       });
     };
 
-    setCollections(updateCollections(collections()));
-    browser.storage.local.set({ collections: collections() });
+    try {
+      await updateAndStoreCollections(updateCollections(collections()));
+      console.log("stored new collection");
+    } catch (error) {
+      // TODO handle error with a toast
+      console.error("Failed to add or update collection:", error);
+    }
   };
 
   const handleSelectCollection = (id: string) => {
