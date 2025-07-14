@@ -1,9 +1,10 @@
 import { createSignal, For, Show } from "solid-js";
+import { CollectionBookmark } from "./CollectionBookmarks";
 
 interface Collection {
   id: string;
   name: string;
-  items: string[];
+  items: CollectionBookmark[];
   subcollections: Collection[];
 }
 
@@ -15,12 +16,10 @@ interface CollectionItemProps {
 }
 
 function CollectionItem(props: CollectionItemProps) {
-  const [isExpanded, setIsExpanded] = createSignal(false);
+  // TODO: figure out a better way to do this because as it is if I click on a child collection it will close other
+  // collections including its parent, doesn't work with nested collections
+  const isExpanded = () => props.selectedCollectionId === props.collection.id;
   const level = () => props.level || 0;
-
-  const toggleExpanded = () => {
-    setIsExpanded(!isExpanded());
-  };
 
   const hasChildren = () =>
     props.collection.subcollections.length > 0 ||
@@ -54,7 +53,6 @@ function CollectionItem(props: CollectionItemProps) {
         onClick={(e) => {
           e.stopPropagation();
           props.onSelectCollection?.(props.collection.id);
-          toggleExpanded();
         }}
       >
         <span class="collection-toggle">
@@ -77,21 +75,6 @@ function CollectionItem(props: CollectionItemProps) {
                     selectedCollectionId={props.selectedCollectionId}
                     onSelectCollection={props.onSelectCollection}
                   />
-                </li>
-              )}
-            </For>
-          </ul>
-
-          {/* Render items */}
-          <ul>
-            <For each={props.collection.items}>
-              {(item) => (
-                <li
-                  class="collection-item-leaf"
-                  style={{ "padding-left": `${(level() + 1) * 20 + 20}px` }}
-                >
-                  <span class="item-bullet">•</span>
-                  <span class="item-name">{item}</span>
                 </li>
               )}
             </For>

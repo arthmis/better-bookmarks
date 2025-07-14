@@ -1,7 +1,10 @@
-import { createResource, createSignal, Match, Switch } from "solid-js";
+import { createSignal, Match, Switch } from "solid-js";
 import Collections, { Collection } from "./components/Collections";
 import AddCollectionButton from "./components/AddCollectionButton";
 import ImportTabButton from "./components/ImportTabButton";
+import CollectionBookmarks, {
+  CollectionBookmark,
+} from "./components/CollectionBookmarks";
 
 interface CollectionFetchState {
   status: "pending" | "success" | "error";
@@ -13,6 +16,10 @@ export default function App() {
   const [selectedCollectionId, setSelectedCollectionId] = createSignal<
     string | undefined
   >();
+  const [bookmarkItems, setBookmarkItems] = createSignal<CollectionBookmark[]>(
+    [],
+  );
+
   const [dataFetchData, setDataFetchData] = createSignal<CollectionFetchState>({
     status: "pending",
     error: undefined,
@@ -123,10 +130,17 @@ export default function App() {
     const updateCollections = (collections: Collection[]): Collection[] => {
       return collections.map((collection) => {
         if (collection.id === selectedId) {
-          return {
+          const newCollection = {
             ...collection,
-            items: [...collection.items, `${title} - ${url}`],
+            items: [
+              ...collection.items,
+              { id: crypto.randomUUID(), title, url },
+            ],
           };
+          // if these items are in view update the list of bookmarks
+          setBookmarkItems(newCollection.items);
+
+          return newCollection;
         }
         return {
           ...collection,
@@ -143,8 +157,18 @@ export default function App() {
     // Toggle selection - if same collection is clicked, deselect it
     if (selectedCollectionId() === id) {
       setSelectedCollectionId(undefined);
+      setBookmarkItems([]);
     } else {
       setSelectedCollectionId(id);
+      const selectedCollection = findCollectionById(
+        collections(),
+        selectedCollectionId()!,
+      );
+      if (selectedCollection) {
+        setBookmarkItems(selectedCollection.items);
+      } else {
+        setBookmarkItems([]);
+      }
     }
   };
 
@@ -171,6 +195,7 @@ export default function App() {
                 onImportTab={importCurrentTab}
               />
             </div>
+            <CollectionBookmarks items={bookmarkItems()} />
 
             <div style="padding: 20px; background-color: #f8f9fa; border-radius: 8px; margin-bottom: 20px;">
               <p style="margin: 0 0 10px 0; font-weight: 500;">
