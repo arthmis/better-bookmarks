@@ -1,59 +1,36 @@
-import { createSignal, createEffect } from "solid-js";
+import { createResource, createSignal, Match, Switch } from "solid-js";
 import Collections, { Collection } from "./components/Collections";
 import AddCollectionButton from "./components/AddCollectionButton";
 import ImportTabButton from "./components/ImportTabButton";
+
+interface CollectionFetchState {
+  status: "pending" | "success" | "error";
+  data?: Collection[];
+  error?: Error;
+}
 
 export default function App() {
   const [selectedCollectionId, setSelectedCollectionId] = createSignal<
     string | undefined
   >();
-  const [collections, setCollections] = createSignal<Collection[]>([
-    {
-      id: "1",
-      name: "Work",
-      items: ["Meeting Notes", "Project Plans"],
-      subcollections: [
-        {
-          id: "1-1",
-          name: "Development",
-          items: ["Code Reviews", "Bug Reports", "Feature Specs"],
-          subcollections: [
-            {
-              id: "1-1-1",
-              name: "Frontend",
-              items: ["React Components", "CSS Styles"],
-              subcollections: [],
-            },
-          ],
-        },
-        {
-          id: "1-2",
-          name: "Marketing",
-          items: ["Campaign Ideas", "Analytics"],
-          subcollections: [],
-        },
-      ],
-    },
-    {
-      id: "2",
-      name: "Personal",
-      items: ["Shopping List", "Recipes", "Travel Plans"],
-      subcollections: [
-        {
-          id: "2-1",
-          name: "Hobbies",
-          items: ["Photography Tips", "Gardening Notes"],
-          subcollections: [],
-        },
-      ],
-    },
-    {
-      id: "3",
-      name: "Learning",
-      items: ["JavaScript Tutorials", "Design Patterns"],
-      subcollections: [],
-    },
-  ]);
+  const [dataFetchData, setDataFetchData] = createSignal<CollectionFetchState>({
+    status: "pending",
+    error: undefined,
+  });
+  const [collections, setCollections] = createSignal<Collection[]>([]);
+
+  browser.storage.local
+    .get("collections")
+    .then((data) => {
+      setCollections(data.collections || []);
+      setDataFetchData({ status: "success" });
+    })
+    .catch(() => {
+      setDataFetchData({
+        status: "error",
+        error: new Error("Failed to fetch collections"),
+      });
+    });
 
   const generateId = () => {
     return Date.now().toString() + Math.random().toString(36).substr(2, 9);
@@ -75,14 +52,21 @@ export default function App() {
     return null;
   };
 
-  const addNewCollection = (name: string) => {
+  const addNewCollection = async (name: string) => {
     const newCollection: Collection = {
       id: generateId(),
       name: name,
       items: [],
       subcollections: [],
     };
-    setCollections([...collections(), newCollection]);
+    try {
+      setCollections([...collections(), newCollection]);
+      await browser.storage.local.set({ collections: collections() });
+      console.log("stored new collection");
+    } catch (error) {
+      // TODO handle error with a toast
+      console.error("Failed to add or update collection:", error);
+    }
   };
 
   const getCurrentTabUrl = async (): Promise<string | null> => {
@@ -152,6 +136,7 @@ export default function App() {
     };
 
     setCollections(updateCollections(collections()));
+    browser.storage.local.set({ collections: collections() });
   };
 
   const handleSelectCollection = (id: string) => {
@@ -167,46 +152,56 @@ export default function App() {
   const isImportDisabled = () => !selectedCollectionId();
 
   return (
-    <div style="display: flex; height: 100vh;">
-      <Collections
-        collections={collections()}
-        selectedCollectionId={selectedCollectionId()}
-        onSelectCollection={handleSelectCollection}
-      />
-      <div style="flex: 1; padding: 20px;">
-        <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
-          <h1 style="margin: 0; flex: 1;">Bookmarks</h1>
-
-          <AddCollectionButton onAddCollection={addNewCollection} />
-
-          <ImportTabButton
+    <Switch fallback={<div>Getting bookmarks</div>}>
+      <Match when={dataFetchData().status === "success"}>
+        <div style="display: flex; height: 100vh;">
+          <Collections
+            collections={collections()}
             selectedCollectionId={selectedCollectionId()}
-            onImportTab={importCurrentTab}
+            onSelectCollection={handleSelectCollection}
           />
-        </div>
+          <div style="flex: 1; padding: 20px;">
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
+              <h1 style="margin: 0; flex: 1;">Bookmarks</h1>
 
-        <div style="padding: 20px; background-color: #f8f9fa; border-radius: 8px; margin-bottom: 20px;">
-          <p style="margin: 0 0 10px 0; font-weight: 500;">
-            Selected Collection:
-            <span style="color: #007acc;">
-              {selectedCollectionId()
-                ? (() => {
-                    const collection = findCollectionById(
-                      collections(),
-                      selectedCollectionId()!,
-                    );
-                    return collection ? collection.name : "Unknown";
-                  })()
-                : "None"}
-            </span>
-          </p>
-          <p style="margin: 0; font-size: 14px; color: #666;">
-            {selectedCollectionId()
-              ? 'Click "Import Tab" to add the current page to this collection.'
-              : "Select a collection from the sidebar to enable importing."}
-          </p>
+              <AddCollectionButton onAddCollection={addNewCollection} />
+
+              <ImportTabButton
+                selectedCollectionId={selectedCollectionId()}
+                onImportTab={importCurrentTab}
+              />
+            </div>
+
+            <div style="padding: 20px; background-color: #f8f9fa; border-radius: 8px; margin-bottom: 20px;">
+              <p style="margin: 0 0 10px 0; font-weight: 500;">
+                Selected Collection:
+                <span style="color: #007acc;">
+                  {selectedCollectionId()
+                    ? (() => {
+                        const collection = findCollectionById(
+                          collections(),
+                          selectedCollectionId()!,
+                        );
+                        return collection ? collection.name : "Unknown";
+                      })()
+                    : "None"}
+                </span>
+              </p>
+              <p style="margin: 0; font-size: 14px; color: #666;">
+                {selectedCollectionId()
+                  ? 'Click "Import Tab" to add the current page to this collection.'
+                  : "Select a collection from the sidebar to enable importing."}
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </Match>
+      <Match when={dataFetchData().status === "error"}>
+        <h1>Error fetching bookmarks</h1>
+      </Match>
+      <Match when={dataFetchData().status === "pending"}>
+        <h1>Loading bookmarks...</h1>
+      </Match>
+    </Switch>
   );
 }
