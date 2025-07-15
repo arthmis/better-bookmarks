@@ -13,7 +13,7 @@ interface CollectionItemProps {
   level?: number;
   selectedCollectionId?: string;
   onSelectCollection?: (
-    id: string,
+    id: Collection,
     currentExpandedCollections: string[],
   ) => void;
   expandedPath: string[];
@@ -60,7 +60,7 @@ function CollectionItem(props: CollectionItemProps) {
         }}
         onClick={(e) => {
           e.stopPropagation();
-          props.onSelectCollection?.(props.collection.id, props.expandedPath);
+          props.onSelectCollection?.(props.collection, props.expandedPath);
         }}
       >
         <span class="collection-toggle">
@@ -103,7 +103,7 @@ function CollectionItem(props: CollectionItemProps) {
 interface CollectionsProps {
   selectedCollectionId?: string;
   onSelectCollection?: (
-    id: string,
+    id: Collection,
     currentExpandedCollections: string[],
   ) => void;
   collections: Collection[];

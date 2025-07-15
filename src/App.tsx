@@ -2,8 +2,8 @@ import { createSignal, Match, Switch } from "solid-js";
 import Collections, { Collection } from "./components/Collections";
 import AddCollectionButton from "./components/AddCollectionButton";
 import ImportTabButton from "./components/ImportTabButton";
-import CollectionBookmarks, {
-  CollectionBookmark,
+import CollectionBookmarksComponent, {
+  CollectionBookmarks,
 } from "./components/CollectionBookmarks";
 
 interface CollectionFetchState {
@@ -16,9 +16,11 @@ export default function App() {
   const [selectedCollectionId, setSelectedCollectionId] = createSignal<
     string | undefined
   >();
-  const [bookmarkItems, setBookmarkItems] = createSignal<CollectionBookmark[]>(
-    [],
-  );
+  const [collectionBookmarks, setBookmarkItems] =
+    createSignal<CollectionBookmarks>({
+      title: "",
+      bookmarks: [],
+    });
 
   const [fetchDataState, setFetchDataState] =
     createSignal<CollectionFetchState>({
@@ -176,7 +178,10 @@ export default function App() {
             ],
           };
           // if these items are in view update the list of bookmarks
-          setBookmarkItems(newCollection.items);
+          setBookmarkItems({
+            collectionTitle: newCollection.name,
+            bookmarks: newCollection.items,
+          });
 
           return newCollection;
         }
@@ -197,28 +202,37 @@ export default function App() {
   };
 
   const handleSelectCollection = (
-    id: string,
+    collection: Collection,
     currentExpandedCollections: string[],
   ) => {
     // Toggle selection - if same collection is clicked, deselect it
-    if (selectedCollectionId() === id) {
+    if (selectedCollectionId() === collection.id) {
       setSelectedCollectionId(undefined);
-      setBookmarkItems([]);
-      let idIndex = currentExpandedCollections.indexOf(id);
+      setBookmarkItems({
+        collectionTitle: "",
+        bookmarks: [],
+      });
+      let idIndex = currentExpandedCollections.indexOf(collection.id);
       setCurrentExpandedCollections(
         currentExpandedCollections.toSpliced(idIndex),
       );
     } else {
-      setSelectedCollectionId(id);
+      setSelectedCollectionId(collection.id);
       const selectedCollection = findCollectionById(
         collections(),
         selectedCollectionId()!,
       );
       if (selectedCollection) {
-        setBookmarkItems(selectedCollection.items);
+        setBookmarkItems({
+          collectionTitle: selectedCollection.name,
+          bookmarks: selectedCollection.items,
+        });
         setCurrentExpandedCollections(currentExpandedCollections);
       } else {
-        setBookmarkItems([]);
+        setBookmarkItems({
+          collectionTitle: "",
+          bookmarks: [],
+        });
       }
     }
   };
@@ -250,7 +264,9 @@ export default function App() {
                   onImportTab={importCurrentTab}
                 />
               </div>
-              <CollectionBookmarks items={bookmarkItems()} />
+              <CollectionBookmarksComponent
+                collection={collectionBookmarks()}
+              />
             </div>
           </div>
         </Match>
