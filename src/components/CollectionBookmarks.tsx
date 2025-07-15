@@ -9,6 +9,7 @@ export interface CollectionBookmark {
   id: string;
   title: string;
   url: string;
+  iconUrl: string | undefined;
 }
 
 interface CollectionBookmarksProps {
@@ -20,7 +21,7 @@ export default function CollectionBookmarksComponent(
 ) {
   return (
     <>
-      <h1>{props.collection.title}</h1>
+      <h1 class="p-4 pb-2 tracking-wide">{props.collection.title}</h1>
       <ul class="list bg-base-100">
         <For
           each={props.collection.bookmarks}
@@ -28,6 +29,13 @@ export default function CollectionBookmarksComponent(
         >
           {(bookmark) => (
             <li class="list-row">
+              <div>
+                <img
+                  class="size-10 rounded-box"
+                  src={bookmark.iconUrl}
+                  alt={bookmark.title}
+                />
+              </div>
               <a class="link link-info" href={bookmark.url}>
                 {bookmark.title}
               </a>

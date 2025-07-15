@@ -116,21 +116,17 @@ export default function App() {
     return;
   };
 
-  const getCurrentTabUrl = async (): Promise<string | null> => {
+  const getCurrentTab = async (): Promise<browser.tabs.Tab | undefined> => {
     try {
       // Check if we're in an extension context
-      if (typeof browser !== "undefined" && browser.tabs) {
-        const [tab] = await browser.tabs.query({
-          active: true,
-          currentWindow: true,
-        });
-        return tab.url || null;
-      }
-      // Fallback for development
-      return window.location.href;
+      const [tab] = await browser.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+      return tab || undefined;
     } catch (error) {
       console.error("Failed to get current tab URL:", error);
-      return null;
+      return undefined;
     }
   };
 
@@ -142,29 +138,23 @@ export default function App() {
       return;
     }
 
-    const url = await getCurrentTabUrl();
-    if (!url) {
+    let tab = undefined;
+    try {
+      tab = await getCurrentTab();
+    } catch (error) {
+      console.error("Failed to get current tab URL:", error);
+      return;
+    }
+    if (!tab?.url) {
       // TODO: decide what to do if there isn't a url
       alert("Failed to get current tab URL");
       return;
     }
 
     // Create a better title by getting the page title
-    let title = url;
-    try {
-      if (typeof browser !== "undefined" && browser.tabs) {
-        const [tab] = await browser.tabs.query({
-          active: true,
-          currentWindow: true,
-        });
-        title = tab.title || url;
-      } else {
-        title = document.title || url;
-      }
-    } catch (error) {
-      // TODO: decide to what to do here
-      console.error("Failed to get tab title:", error);
-    }
+    let title = tab.title || tab.url;
+    let url = tab.url;
+    let iconUrl = tab.favIconUrl || undefined;
 
     // Find and update the selected collection
     const updateCollections = (collections: Collection[]): Collection[] => {
@@ -174,12 +164,12 @@ export default function App() {
             ...collection,
             items: [
               ...collection.items,
-              { id: crypto.randomUUID(), title, url },
+              { id: crypto.randomUUID(), title, url, iconUrl },
             ],
           };
           // if these items are in view update the list of bookmarks
           setBookmarkItems({
-            collectionTitle: newCollection.name,
+            title: newCollection.name,
             bookmarks: newCollection.items,
           });
 
@@ -209,7 +199,7 @@ export default function App() {
     if (selectedCollectionId() === collection.id) {
       setSelectedCollectionId(undefined);
       setBookmarkItems({
-        collectionTitle: "",
+        title: "",
         bookmarks: [],
       });
       let idIndex = currentExpandedCollections.indexOf(collection.id);
@@ -224,13 +214,13 @@ export default function App() {
       );
       if (selectedCollection) {
         setBookmarkItems({
-          collectionTitle: selectedCollection.name,
+          title: selectedCollection.name,
           bookmarks: selectedCollection.items,
         });
         setCurrentExpandedCollections(currentExpandedCollections);
       } else {
         setBookmarkItems({
-          collectionTitle: "",
+          title: "",
           bookmarks: [],
         });
       }
