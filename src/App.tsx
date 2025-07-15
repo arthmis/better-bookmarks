@@ -20,27 +20,30 @@ export default function App() {
     [],
   );
 
-  const [dataFetchData, setDataFetchData] = createSignal<CollectionFetchState>({
-    status: "pending",
-    error: undefined,
-  });
+  const [fetchDataState, setFetchDataState] =
+    createSignal<CollectionFetchState>({
+      status: "pending",
+      error: undefined,
+    });
   const [collections, setCollections] = createSignal<Collection[]>([]);
+  const [currentExpandedCollections, setCurrentExpandedCollections] =
+    createSignal<string[]>([]);
 
   browser.storage.local
     .get("collections")
     .then((data) => {
       setCollections(data.collections || []);
-      setDataFetchData({ status: "success" });
+      setFetchDataState({ status: "success" });
     })
     .catch(() => {
-      setDataFetchData({
+      setFetchDataState({
         status: "error",
         error: new Error("Failed to fetch collections"),
       });
     });
 
   const generateId = () => {
-    return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    return crypto.randomUUID();
   };
 
   const findCollectionById = (
@@ -193,11 +196,18 @@ export default function App() {
     }
   };
 
-  const handleSelectCollection = (id: string) => {
+  const handleSelectCollection = (
+    id: string,
+    currentExpandedCollections: string[],
+  ) => {
     // Toggle selection - if same collection is clicked, deselect it
     if (selectedCollectionId() === id) {
       setSelectedCollectionId(undefined);
       setBookmarkItems([]);
+      let idIndex = currentExpandedCollections.indexOf(id);
+      setCurrentExpandedCollections(
+        currentExpandedCollections.toSpliced(idIndex),
+      );
     } else {
       setSelectedCollectionId(id);
       const selectedCollection = findCollectionById(
@@ -206,6 +216,7 @@ export default function App() {
       );
       if (selectedCollection) {
         setBookmarkItems(selectedCollection.items);
+        setCurrentExpandedCollections(currentExpandedCollections);
       } else {
         setBookmarkItems([]);
       }
@@ -217,12 +228,15 @@ export default function App() {
 
   return (
     <Switch fallback={<div>Getting bookmarks</div>}>
-      <Match when={dataFetchData().status === "success"}>
+      <Match when={fetchDataState().status === "success"}>
         <div style="display: flex; height: 100vh;">
           <Collections
             collections={collections()}
             selectedCollectionId={selectedCollectionId()}
             onSelectCollection={handleSelectCollection}
+            path={[]}
+            setCurrentExpandedCollections={setCurrentExpandedCollections}
+            currentExpandedCollections={currentExpandedCollections()}
           />
           <div style="flex: 1; padding: 20px;">
             <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
@@ -261,10 +275,10 @@ export default function App() {
           </div>
         </div>
       </Match>
-      <Match when={dataFetchData().status === "error"}>
+      <Match when={fetchDataState().status === "error"}>
         <h1>Error fetching bookmarks</h1>
       </Match>
-      <Match when={dataFetchData().status === "pending"}>
+      <Match when={fetchDataState().status === "pending"}>
         <h1>Loading bookmarks...</h1>
       </Match>
     </Switch>

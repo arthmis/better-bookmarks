@@ -12,13 +12,21 @@ interface CollectionItemProps {
   collection: Collection;
   level?: number;
   selectedCollectionId?: string;
-  onSelectCollection?: (id: string) => void;
+  onSelectCollection?: (
+    id: string,
+    currentExpandedCollections: string[],
+  ) => void;
+  expandedPath: string[];
+  setCurrentExpandedCollections: (path: string[]) => void;
+  currentExpandedCollections: string[];
 }
 
 function CollectionItem(props: CollectionItemProps) {
   // TODO: figure out a better way to do this because as it is if I click on a child collection it will close other
   // collections including its parent, doesn't work with nested collections
-  const isExpanded = () => props.selectedCollectionId === props.collection.id;
+  const isExpanded = () =>
+    props.currentExpandedCollections.includes(props.collection.id) ||
+    props.selectedCollectionId === props.collection.id;
   const level = () => props.level || 0;
 
   const hasChildren = () =>
@@ -52,7 +60,7 @@ function CollectionItem(props: CollectionItemProps) {
         }}
         onClick={(e) => {
           e.stopPropagation();
-          props.onSelectCollection?.(props.collection.id);
+          props.onSelectCollection?.(props.collection.id, props.expandedPath);
         }}
       >
         <span class="collection-toggle">
@@ -74,6 +82,13 @@ function CollectionItem(props: CollectionItemProps) {
                     level={level() + 1}
                     selectedCollectionId={props.selectedCollectionId}
                     onSelectCollection={props.onSelectCollection}
+                    expandedPath={[...props.expandedPath, subcollection.id]}
+                    setCurrentExpandedCollections={
+                      props.setCurrentExpandedCollections
+                    }
+                    currentExpandedCollections={
+                      props.currentExpandedCollections
+                    }
                   />
                 </li>
               )}
@@ -87,9 +102,15 @@ function CollectionItem(props: CollectionItemProps) {
 
 interface CollectionsProps {
   selectedCollectionId?: string;
-  onSelectCollection?: (id: string) => void;
+  onSelectCollection?: (
+    id: string,
+    currentExpandedCollections: string[],
+  ) => void;
   collections: Collection[];
   onAddCollection?: (name: string) => void;
+  path: string[];
+  setCurrentExpandedCollections: (path: string[]) => void;
+  currentExpandedCollections: string[];
 }
 
 export default function Collections(props: CollectionsProps) {
@@ -106,6 +127,11 @@ export default function Collections(props: CollectionsProps) {
                 collection={collection}
                 selectedCollectionId={props.selectedCollectionId}
                 onSelectCollection={props.onSelectCollection}
+                expandedPath={[...props.path, collection.id]}
+                setCurrentExpandedCollections={
+                  props.setCurrentExpandedCollections
+                }
+                currentExpandedCollections={props.currentExpandedCollections}
               />
             </li>
           )}
