@@ -28,26 +28,37 @@ export default function CollectionBookmarksComponent(
           each={props.collection.bookmarks}
           fallback={<div>No bookmarks found.</div>}
         >
-          {(bookmark) => (
-            <li class="list-row">
-              <div>
-                <img
-                  class="size-10 rounded-box"
-                  src={bookmark.iconUrl}
-                  alt={bookmark.title}
-                />
-              </div>
-              <a class="link link-info" href={bookmark.url}>
-                {bookmark.title}
-              </a>
-              <button
-                onClick={() => props.handleDeleteBookmark(bookmark.id)}
-                class="btn btn-square btn-ghost"
-              >
-                <img src="/assets/trash.svg" alt="Delete" />
-              </button>
-            </li>
-          )}
+          {(bookmark) => {
+            const baseUrl = new URL(bookmark.url);
+            return (
+              <li class="list-row">
+                <div>
+                  <img
+                    class="size-10 rounded-box"
+                    src={bookmark.iconUrl}
+                    alt={bookmark.title}
+                  />
+                </div>
+                <div class="flex flex-col">
+                  <a class="link link-info" href={bookmark.url}>
+                    {bookmark.title}
+                  </a>
+                  <a
+                    href={baseUrl.origin}
+                    class="link link-neutral opacity-65 text-xs"
+                  >
+                    {baseUrl.host}
+                  </a>
+                </div>
+                <button
+                  onClick={() => props.handleDeleteBookmark(bookmark.id)}
+                  class="btn btn-square btn-ghost"
+                >
+                  <img src="/assets/trash.svg" alt="Delete" />
+                </button>
+              </li>
+            );
+          }}
         </For>
       </ul>
     </>
