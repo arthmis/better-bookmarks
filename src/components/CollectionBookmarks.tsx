@@ -14,6 +14,7 @@ export interface CollectionBookmark {
 
 interface CollectionBookmarksProps {
   collection: CollectionBookmarks;
+  handleDeleteBookmark: (id: string) => void;
 }
 
 export default function CollectionBookmarksComponent(
@@ -39,6 +40,12 @@ export default function CollectionBookmarksComponent(
               <a class="link link-info" href={bookmark.url}>
                 {bookmark.title}
               </a>
+              <button
+                onClick={() => props.handleDeleteBookmark(bookmark.id)}
+                class="btn btn-square btn-ghost"
+              >
+                <img src="/assets/trash.svg" alt="Delete" />
+              </button>
             </li>
           )}
         </For>

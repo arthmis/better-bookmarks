@@ -191,6 +191,39 @@ export default function App() {
     }
   };
 
+  const handleDeleteBookmark = async (bookmarkId: string) => {
+    const updateCollections = (collections: Collection[]): Collection[] =>
+      collections.map((collection) => {
+        if (collection.id === selectedCollectionId()) {
+          const updatedItems = collection.items.filter(
+            (item) => item.id !== bookmarkId,
+          );
+          const newCollection = {
+            ...collection,
+            items: updatedItems,
+          };
+          // if these items are in view update the list of bookmarks
+          setBookmarkItems({
+            title: newCollection.name,
+            bookmarks: newCollection.items,
+          });
+          return newCollection;
+        }
+        return {
+          ...collection,
+          subcollections: updateCollections(collection.subcollections),
+        };
+      });
+
+    try {
+      await updateAndStoreCollections(updateCollections(collections()));
+      console.log("deleted bookmark");
+    } catch (error) {
+      // TODO handle error with a toast
+      console.error("Failed to delete bookmark:", error);
+    }
+  };
+
   const handleSelectCollection = (
     collection: Collection,
     currentExpandedCollections: string[],
@@ -256,6 +289,7 @@ export default function App() {
               </div>
               <CollectionBookmarksComponent
                 collection={collectionBookmarks()}
+                handleDeleteBookmark={handleDeleteBookmark}
               />
             </div>
           </div>
