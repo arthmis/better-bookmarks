@@ -227,60 +227,40 @@ export default function App() {
   const isImportDisabled = () => !selectedCollectionId();
 
   return (
-    <Switch fallback={<div>Getting bookmarks</div>}>
-      <Match when={fetchDataState().status === "success"}>
-        <div style="display: flex; height: 100vh;">
-          <Collections
-            collections={collections()}
-            selectedCollectionId={selectedCollectionId()}
-            onSelectCollection={handleSelectCollection}
-            path={[]}
-            setCurrentExpandedCollections={setCurrentExpandedCollections}
-            currentExpandedCollections={currentExpandedCollections()}
-          />
-          <div style="flex: 1; padding: 20px;">
-            <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
-              <h1 style="margin: 0; flex: 1;">Bookmarks</h1>
+    <div class="h-svw flex">
+      <Switch fallback={<div>Getting bookmarks</div>}>
+        <Match when={fetchDataState().status === "success"}>
+          <div class="flex">
+            <Collections
+              collections={collections()}
+              selectedCollectionId={selectedCollectionId()}
+              onSelectCollection={handleSelectCollection}
+              path={[]}
+              setCurrentExpandedCollections={setCurrentExpandedCollections}
+              currentExpandedCollections={currentExpandedCollections()}
+            />
+            <div style="flex: 1; padding: 20px;">
+              <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
+                <h1 style="margin: 0; flex: 1;">Bookmarks</h1>
 
-              <AddCollectionButton onAddCollection={addNewCollection} />
+                <AddCollectionButton onAddCollection={addNewCollection} />
 
-              <ImportTabButton
-                selectedCollectionId={selectedCollectionId()}
-                onImportTab={importCurrentTab}
-              />
-            </div>
-            <CollectionBookmarks items={bookmarkItems()} />
-
-            <div style="padding: 20px; background-color: #f8f9fa; border-radius: 8px; margin-bottom: 20px;">
-              <p style="margin: 0 0 10px 0; font-weight: 500;">
-                Selected Collection:
-                <span style="color: #007acc;">
-                  {selectedCollectionId()
-                    ? (() => {
-                        const collection = findCollectionById(
-                          collections(),
-                          selectedCollectionId()!,
-                        );
-                        return collection ? collection.name : "Unknown";
-                      })()
-                    : "None"}
-                </span>
-              </p>
-              <p style="margin: 0; font-size: 14px; color: #666;">
-                {selectedCollectionId()
-                  ? 'Click "Import Tab" to add the current page to this collection.'
-                  : "Select a collection from the sidebar to enable importing."}
-              </p>
+                <ImportTabButton
+                  selectedCollectionId={selectedCollectionId()}
+                  onImportTab={importCurrentTab}
+                />
+              </div>
+              <CollectionBookmarks items={bookmarkItems()} />
             </div>
           </div>
-        </div>
-      </Match>
-      <Match when={fetchDataState().status === "error"}>
-        <h1>Error fetching bookmarks</h1>
-      </Match>
-      <Match when={fetchDataState().status === "pending"}>
-        <h1>Loading bookmarks...</h1>
-      </Match>
-    </Switch>
+        </Match>
+        <Match when={fetchDataState().status === "error"}>
+          <h1>Error fetching bookmarks</h1>
+        </Match>
+        <Match when={fetchDataState().status === "pending"}>
+          <h1>Loading bookmarks...</h1>
+        </Match>
+      </Switch>
+    </div>
   );
 }

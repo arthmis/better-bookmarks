@@ -14,11 +14,13 @@ export default function CollectionBookmarks(props: CollectionBookmarksProps) {
   return (
     <>
       <h1>Collection Bookmarks</h1>
-      <ul>
+      <ul class="list bg-base-100">
         <For each={props.items} fallback={<div>No bookmarks found.</div>}>
           {(bookmark) => (
-            <li>
-              <a href={bookmark.url}>{bookmark.title}</a>
+            <li class="list-row">
+              <a class="link link-info" href={bookmark.url}>
+                {bookmark.title}
+              </a>
             </li>
           )}
         </For>

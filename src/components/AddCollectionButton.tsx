@@ -13,24 +13,7 @@ export default function AddCollectionButton(props: AddCollectionButtonProps) {
   };
 
   return (
-    <button
-      onClick={handleAddCollection}
-      style="
-        background-color: #007acc;
-        color: white;
-        border: none;
-        padding: 10px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      "
-      onMouseOver={(e) => (e.target.style.backgroundColor = "#005a9e")}
-      onMouseOut={(e) => (e.target.style.backgroundColor = "#007acc")}
-    >
+    <button onClick={handleAddCollection} class="btn btn-secondary">
       <span style="font-size: 16px;">+</span>
       Add Collection
     </button>
