@@ -276,9 +276,9 @@ export default function App() {
               setCurrentExpandedCollections={setCurrentExpandedCollections}
               currentExpandedCollections={currentExpandedCollections()}
             />
-            <div style="flex: 1; padding: 20px;">
-              <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
-                <h1 style="margin: 0; flex: 1;">Bookmarks</h1>
+            <div class="flex-1 p-5">
+              <div class="flex gap-2.5 mb-5 items-center">
+                <h1 class="m-0 flex-1">Bookmarks</h1>
 
                 <AddCollectionButton onAddCollection={addNewCollection} />
 

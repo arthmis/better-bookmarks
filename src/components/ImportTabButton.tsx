@@ -20,7 +20,7 @@ export default function ImportTabButton(props: ImportTabButtonProps) {
       disabled={isDisabled()}
       class="btn btn-primary"
     >
-      <span style="font-size: 16px;">📥</span>
+      <span class="text-sm">📥</span>
       Import Tab
     </button>
   );

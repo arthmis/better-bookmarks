@@ -14,7 +14,7 @@ export default function AddCollectionButton(props: AddCollectionButtonProps) {
 
   return (
     <button onClick={handleAddCollection} class="btn btn-secondary">
-      <span style="font-size: 16px;">+</span>
+      <span class="text-sm">+</span>
       Add Collection
     </button>
   );

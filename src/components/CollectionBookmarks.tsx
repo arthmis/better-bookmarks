@@ -40,12 +40,12 @@ export default function CollectionBookmarksComponent(
                   />
                 </div>
                 <div class="flex flex-col">
-                  <a class="link link-info" href={bookmark.url}>
+                  <a class="link link-info link-hover" href={bookmark.url}>
                     {bookmark.title}
                   </a>
                   <a
                     href={baseUrl.origin}
-                    class="link link-neutral opacity-65 text-xs"
+                    class="link link-neutral link-hover opacity-65 text-xs pt-1"
                   >
                     {baseUrl.host}
                   </a>
