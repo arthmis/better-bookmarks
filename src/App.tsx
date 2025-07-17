@@ -164,7 +164,14 @@ export default function App() {
             ...collection,
             items: [
               ...collection.items,
-              { id: crypto.randomUUID(), title, url, iconUrl },
+              {
+                id: crypto.randomUUID(),
+                title,
+                url,
+                iconUrl,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              },
             ],
           };
           // if these items are in view update the list of bookmarks

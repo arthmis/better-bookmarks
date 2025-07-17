@@ -10,6 +10,8 @@ export interface CollectionBookmark {
   title: string;
   url: string;
   iconUrl: string | undefined;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface CollectionBookmarksProps {
@@ -43,12 +45,17 @@ export default function CollectionBookmarksComponent(
                   <a class="link link-info link-hover" href={bookmark.url}>
                     {bookmark.title}
                   </a>
-                  <a
-                    href={baseUrl.origin}
-                    class="link link-neutral link-hover opacity-65 text-xs pt-1"
-                  >
-                    {baseUrl.host}
-                  </a>
+                  <div class="flex justify-between">
+                    <a
+                      href={baseUrl.origin}
+                      class="link link-neutral link-hover opacity-65 text-xs pt-1"
+                    >
+                      {baseUrl.host}
+                    </a>
+                    <span class="text-xs pt-1 opacity-65">
+                      {bookmark.createdAt.toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
                 <button
                   onClick={() => props.handleDeleteBookmark(bookmark.id)}
