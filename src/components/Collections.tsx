@@ -6,6 +6,8 @@ interface Collection {
   name: string;
   items: CollectionBookmark[];
   subcollections: Collection[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface CollectionItemProps {

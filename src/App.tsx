@@ -70,6 +70,8 @@ export default function App() {
       name: name,
       items: [],
       subcollections: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     if (selectedCollectionId() === undefined) {
