@@ -51,27 +51,51 @@ function CollectionItem(props: CollectionItemProps) {
   };
 
   return (
-    <div class="collection-item">
+    <div>
       <div
-        class="collection-header"
-        style={{ "padding-left": `${level() * 20}px` }}
+        class="flex group items-center py-2 px-4 cursor-pointer transition-colors duration-200 hover:bg-gray-600 hover:text-white
+        "
         classList={{
-          selected: props.selectedCollectionId === props.collection.id,
+          "bg-blue-600 text-white":
+            props.selectedCollectionId === props.collection.id,
         }}
+        // TODO: figure out how to use flex and padding to do this below
+        style={{ "padding-left": `${level() * 20 + 16}px` }}
         onClick={(e) => {
           e.stopPropagation();
           props.onSelectCollection?.(props.collection, props.expandedPath);
         }}
       >
-        <span class="collection-toggle">
+        <span
+          class="w-5 text-xs text-gray-600 group-hover:text-white mr-2 flex items-center justify-center"
+          classList={{
+            "text-white": props.selectedCollectionId === props.collection.id,
+          }}
+        >
           <Show when={hasChildren()}>{isExpanded() ? "▼" : "▶"}</Show>
         </span>
-        <span class="collection-name">{props.collection.name}</span>
-        <span class="collection-count">({totalItemCount()})</span>
+        <span
+          class="flex-1 font-medium group-hover:text-white"
+          classList={{
+            "text-white": props.selectedCollectionId === props.collection.id,
+            "text-gray-800": props.selectedCollectionId !== props.collection.id,
+          }}
+        >
+          {props.collection.name}
+        </span>
+        <span
+          class="text-xs ml-2 group-hover:text-white"
+          classList={{
+            "text-white/80": props.selectedCollectionId === props.collection.id,
+            "text-gray-600": props.selectedCollectionId !== props.collection.id,
+          }}
+        >
+          ({totalItemCount()})
+        </span>
       </div>
 
       <Show when={isExpanded()}>
-        <div class="collection-content">
+        <div class="bg-black/[0.02]">
           {/* Render subcollections */}
           <ul>
             <For each={props.collection.subcollections}>
@@ -115,11 +139,11 @@ interface CollectionsProps {
 
 export default function Collections(props: CollectionsProps) {
   return (
-    <div class="collections-panel">
-      <div class="collections-header">
-        <h3>Collections</h3>
+    <div class="w-[300px] h-screen bg-gray-100 border-r border-gray-300 overflow-y-auto font-sans">
+      <div class="p-4 border-b border-gray-300 bg-white sticky top-0 z-10">
+        <h3 class="m-0 text-lg font-semibold text-gray-800">Collections</h3>
       </div>
-      <ul class="collections-list">
+      <ul class="py-2">
         <For each={props.collections}>
           {(collection) => (
             <li>
@@ -137,120 +161,6 @@ export default function Collections(props: CollectionsProps) {
           )}
         </For>
       </ul>
-
-      <style>{`
-        .collections-panel {
-          width: 300px;
-          height: 100vh;
-          background-color: #f5f5f5;
-          border-right: 1px solid #ddd;
-          overflow-y: auto;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-
-        .collections-header {
-          padding: 16px;
-          border-bottom: 1px solid #ddd;
-          background-color: #fff;
-          position: sticky;
-          top: 0;
-          z-index: 1;
-        }
-
-        .collections-header h3 {
-          margin: 0;
-          font-size: 18px;
-          font-weight: 600;
-          color: #333;
-        }
-
-        .collections-list {
-          padding: 8px 0;
-        }
-
-        .collection-item {
-          user-select: none;
-        }
-
-        .collection-header {
-          display: flex;
-          align-items: center;
-          padding: 8px 16px;
-          cursor: pointer;
-          transition: background-color 0.2s;
-        }
-
-        .collection-header:hover {
-          background-color: #e9e9e9;
-        }
-
-        .collection-header.selected {
-          background-color: #007acc;
-          color: white;
-        }
-
-        .collection-header.selected .collection-count {
-          color: rgba(255, 255, 255, 0.8);
-        }
-
-        .collection-header.selected .collection-toggle {
-          color: rgba(255, 255, 255, 0.8);
-        }
-
-        .collection-toggle {
-          width: 20px;
-          font-size: 12px;
-          color: #666;
-          margin-right: 8px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .collection-name {
-          flex: 1;
-          font-weight: 500;
-          color: #333;
-        }
-
-        .collection-header.selected .collection-name {
-          color: white;
-        }
-
-        .collection-count {
-          font-size: 12px;
-          color: #666;
-          margin-left: 8px;
-        }
-
-        .collection-content {
-          background-color: rgba(0, 0, 0, 0.02);
-        }
-
-        .collection-item-leaf {
-          display: flex;
-          align-items: center;
-          padding: 4px 16px;
-          font-size: 14px;
-          color: #555;
-        }
-
-        .collection-item-leaf:hover {
-          background-color: #e9e9e9;
-          cursor: pointer;
-        }
-
-        .item-bullet {
-          width: 20px;
-          margin-right: 8px;
-          color: #999;
-          font-size: 12px;
-        }
-
-        .item-name {
-          flex: 1;
-        }
-      `}</style>
     </div>
   );
 }
