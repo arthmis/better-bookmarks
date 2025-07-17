@@ -264,10 +264,11 @@ export default function App() {
   const isImportDisabled = () => !selectedCollectionId();
 
   return (
-    <div class="h-svw flex">
+    // firefox web extension can only grow up to 800px wide by 600px high
+    <div class="h-svw flex w-3xl">
       <Switch fallback={<div>Getting bookmarks</div>}>
         <Match when={fetchDataState().status === "success"}>
-          <div class="flex">
+          <div class="flex w-full">
             <Collections
               collections={collections()}
               selectedCollectionId={selectedCollectionId()}
@@ -276,12 +277,9 @@ export default function App() {
               setCurrentExpandedCollections={setCurrentExpandedCollections}
               currentExpandedCollections={currentExpandedCollections()}
             />
-            <div class="flex-1 p-5">
-              <div class="flex gap-2.5 mb-5 items-center">
-                <h1 class="m-0 flex-1">Bookmarks</h1>
-
+            <div class="flex flex-col flex-1 p-5 w-fit">
+              <div class="flex flex-row mb-5 justify-evenly items-center">
                 <AddCollectionButton onAddCollection={addNewCollection} />
-
                 <ImportTabButton
                   selectedCollectionId={selectedCollectionId()}
                   onImportTab={importCurrentTab}

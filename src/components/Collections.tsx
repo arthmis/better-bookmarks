@@ -51,7 +51,7 @@ function CollectionItem(props: CollectionItemProps) {
   };
 
   return (
-    <div>
+    <div class="w-full">
       <div
         class="flex group items-center py-2 px-4 cursor-pointer transition-colors duration-200 hover:bg-gray-600 hover:text-white
         "
