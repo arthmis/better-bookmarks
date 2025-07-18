@@ -5,6 +5,7 @@ import ImportTabButton from "./components/ImportTabButton";
 import ErrorToast, { showErrorToast } from "./components/ErrorToast";
 import CollectionBookmarksComponent, {
   CollectionBookmarks,
+  CollectionBookmark,
 } from "./components/CollectionBookmarks";
 
 interface CollectionFetchState {
@@ -119,18 +120,13 @@ export default function App() {
     return;
   };
 
-  const getCurrentTab = async (): Promise<browser.tabs.Tab | undefined> => {
-    try {
-      // Check if we're in an extension context
-      const [tab] = await browser.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-      return tab || undefined;
-    } catch (error) {
-      console.error("Failed to get current tab URL:", error);
-      return undefined;
-    }
+  const getSelectedTabs = async (): Promise<browser.tabs.Tab[]> => {
+    // Check if we're in an extension context
+    const tabs = await browser.tabs.query({
+      currentWindow: true,
+      highlighted: true,
+    });
+    return tabs;
   };
 
   const importCurrentTab = async () => {
@@ -141,22 +137,33 @@ export default function App() {
       return;
     }
 
-    let tab = undefined;
+    let tabs: browser.tabs.Tab[] | undefined = undefined;
     try {
-      tab = await getCurrentTab();
+      tabs = await getSelectedTabs();
     } catch (error) {
-      console.error("Failed to get current tab URL:", error);
-      return;
-    }
-    if (!tab?.url) {
-      showErrorToast("Failed to get current tab URL");
+      showErrorToast("Failed to save selected tab(s).");
       return;
     }
 
-    // Create a better title by getting the page title
-    let title = tab.title || tab.url;
-    let url = tab.url;
-    let iconUrl = tab.favIconUrl || undefined;
+    if (!tabs) {
+      return;
+    }
+
+    const bookmarks: CollectionBookmark[] = tabs.map((tab) => {
+      // Create a better title by getting the page title
+      let title = tab.title || "";
+      let url = tab.url || "";
+      let iconUrl = tab.favIconUrl || undefined;
+
+      return {
+        id: crypto.randomUUID(),
+        title,
+        url,
+        iconUrl,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    });
 
     // Find and update the selected collection
     const updateCollections = (collections: Collection[]): Collection[] => {
@@ -164,17 +171,7 @@ export default function App() {
         if (collection.id === selectedId) {
           const newCollection = {
             ...collection,
-            items: [
-              ...collection.items,
-              {
-                id: crypto.randomUUID(),
-                title,
-                url,
-                iconUrl,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-              },
-            ],
+            items: [...collection.items, ...bookmarks],
           };
           // if these items are in view update the list of bookmarks
           setBookmarkItems({
