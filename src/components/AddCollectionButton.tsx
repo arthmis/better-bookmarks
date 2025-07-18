@@ -13,7 +13,7 @@ export default function AddCollectionButton(props: AddCollectionButtonProps) {
   };
 
   return (
-    <button onClick={handleAddCollection} class="btn btn-secondary">
+    <button onClick={handleAddCollection} class="btn btn-soft">
       <span class="text-sm">+</span>
       Add Collection
     </button>

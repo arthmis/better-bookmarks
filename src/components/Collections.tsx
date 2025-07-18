@@ -58,7 +58,7 @@ function CollectionItem(props: CollectionItemProps) {
         class="flex group items-center py-2 px-4 cursor-pointer transition-colors duration-200 hover:bg-gray-600 hover:text-white
         "
         classList={{
-          "bg-blue-600 text-white":
+          "bg-secondary text-white":
             props.selectedCollectionId === props.collection.id,
         }}
         // TODO: figure out how to use flex and padding to do this below
