@@ -1,7 +1,8 @@
-import { createSignal, Match, Switch } from "solid-js";
+import { createSignal, Match, Show, Switch } from "solid-js";
 import Collections, { Collection } from "./components/Collections";
 import AddCollectionButton from "./components/AddCollectionButton";
 import ImportTabButton from "./components/ImportTabButton";
+import ErrorToast, { showErrorToast } from "./components/ErrorToast";
 import CollectionBookmarksComponent, {
   CollectionBookmarks,
 } from "./components/CollectionBookmarks";
@@ -78,8 +79,8 @@ export default function App() {
       try {
         await updateAndStoreCollections([...collections(), newCollection]);
       } catch (error) {
-        // TODO handle error with a toast
         console.error("Failed to add or update collection:", error);
+        showErrorToast("Failed to add or update collection. Please try again.");
       } finally {
         return;
       }
@@ -104,8 +105,8 @@ export default function App() {
       await updateAndStoreCollections(updateCollections(collections()));
       console.log("stored new collection");
     } catch (error) {
-      // TODO handle error with a toast
       console.error("Failed to add or update collection:", error);
+      showErrorToast("Failed to add or update collection. Please try again.");
     }
   };
 
@@ -136,7 +137,7 @@ export default function App() {
     const selectedId = selectedCollectionId();
     if (!selectedId) {
       // TODO: Implement logic to create a new collection if none is selected
-      alert("Please select a collection first");
+      showErrorToast("Please select a collection first");
       return;
     }
 
@@ -148,8 +149,7 @@ export default function App() {
       return;
     }
     if (!tab?.url) {
-      // TODO: decide what to do if there isn't a url
-      alert("Failed to get current tab URL");
+      showErrorToast("Failed to get current tab URL");
       return;
     }
 
@@ -195,8 +195,8 @@ export default function App() {
       await updateAndStoreCollections(updateCollections(collections()));
       console.log("stored new collection");
     } catch (error) {
-      // TODO handle error with a toast
-      console.error("Failed to add or update collection:", error);
+      console.error("Failed to add bookmark to collection:", error);
+      showErrorToast("Failed to add bookmark to collection. Please try again.");
     }
   };
 
@@ -228,8 +228,8 @@ export default function App() {
       await updateAndStoreCollections(updateCollections(collections()));
       console.log("deleted bookmark");
     } catch (error) {
-      // TODO handle error with a toast
       console.error("Failed to delete bookmark:", error);
+      showErrorToast("Failed to delete bookmark. Please try again.");
     }
   };
 
@@ -308,6 +308,7 @@ export default function App() {
           <h1>Loading bookmarks...</h1>
         </Match>
       </Switch>
+      <ErrorToast />
     </div>
   );
 }
