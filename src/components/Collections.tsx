@@ -141,7 +141,7 @@ interface CollectionsProps {
 
 export default function Collections(props: CollectionsProps) {
   return (
-    <div class="w-[300px] h-screen bg-gray-100 border-r border-gray-300 overflow-y-auto font-sans">
+    <div class="w-[300px] h-full bg-gray-100 border-r border-gray-300 overflow-auto font-sans">
       <div class="p-4 border-b border-gray-300 bg-white sticky top-0 z-10">
         <h3 class="m-0 text-lg font-semibold text-gray-800">Collections</h3>
       </div>

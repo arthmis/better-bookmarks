@@ -271,10 +271,10 @@ export default function App() {
 
   return (
     // firefox web extension can only grow up to 800px wide by 600px high
-    <div class="h-svw flex w-3xl">
+    <div class="h-full flex w-full">
       <Switch fallback={<div>Getting bookmarks</div>}>
         <Match when={fetchDataState().status === "success"}>
-          <div class="flex w-full">
+          <div class="flex w-full h-full">
             <Collections
               collections={collections()}
               selectedCollectionId={selectedCollectionId()}
@@ -283,7 +283,7 @@ export default function App() {
               setCurrentExpandedCollections={setCurrentExpandedCollections}
               currentExpandedCollections={currentExpandedCollections()}
             />
-            <div class="flex flex-col flex-1 p-5 w-fit">
+            <div class="flex flex-col flex-1 p-5 w-full h-full">
               <div class="flex flex-row mb-5 justify-evenly items-center">
                 <AddCollectionButton onAddCollection={addNewCollection} />
                 <ImportTabButton
