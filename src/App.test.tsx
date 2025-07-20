@@ -721,6 +721,54 @@ describe("App Component", () => {
             screen.queryByText("Example Work Item"),
           ).not.toBeInTheDocument();
         });
+
+        it("should switch bookmark visibility when changing from one selected collection to another", async () => {
+          render(() => <App />);
+
+          await waitFor(() => {
+            expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+          });
+
+          // Start by selecting the "Work" collection
+          const workCollection = await screen.findByText("Work");
+          fireEvent.click(workCollection);
+
+          // Wait for Work collection bookmarks to be displayed
+          await waitFor(() => {
+            expect(screen.getByText("Example Work Item")).toBeInTheDocument();
+          });
+
+          // Verify Work collection bookmark is visible and Personal is not
+          expect(screen.getByText("Example Work Item")).toBeInTheDocument();
+          expect(
+            screen.queryByText("Example Personal Item"),
+          ).not.toBeInTheDocument();
+
+          // Now switch to the "Personal" collection
+          const personalCollection = await screen.findByText("Personal");
+          fireEvent.click(personalCollection);
+
+          // Wait for Personal collection bookmarks to be displayed
+          await waitFor(() => {
+            expect(
+              screen.getByText("Example Personal Item"),
+            ).toBeInTheDocument();
+          });
+
+          // Verify Personal collection bookmark is now visible
+          expect(screen.getByText("Example Personal Item")).toBeInTheDocument();
+
+          // Verify Work collection bookmark is no longer visible
+          expect(
+            screen.queryByText("Example Work Item"),
+          ).not.toBeInTheDocument();
+
+          // Verify import button is still enabled (since a collection is selected)
+          const importButton = screen.getByRole("button", {
+            name: /import tab/i,
+          });
+          expect(importButton).not.toBeDisabled();
+        });
       });
     });
   });
