@@ -669,6 +669,58 @@ describe("App Component", () => {
           });
           expect(importButton).toBeDisabled();
         });
+
+        it("should show bookmarks when clicking on an unselected collection", async () => {
+          render(() => <App />);
+
+          await waitFor(() => {
+            expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+          });
+
+          // Initially no collection is selected, so no bookmarks should be visible
+          expect(
+            screen.queryByText("Example Work Item"),
+          ).not.toBeInTheDocument();
+          expect(
+            screen.queryByText("Example Personal Item"),
+          ).not.toBeInTheDocument();
+
+          // Click on the "Work" collection to select it
+          const workCollection = await screen.findByText("Work");
+          fireEvent.click(workCollection);
+
+          // Wait for the collection to be selected and its bookmarks to appear
+          await waitFor(() => {
+            expect(screen.getByText("Example Work Item")).toBeInTheDocument();
+          });
+
+          // Verify the Work collection's bookmark is now visible
+          expect(screen.getByText("Example Work Item")).toBeInTheDocument();
+
+          // Verify the Personal collection's bookmark is still not visible
+          expect(
+            screen.queryByText("Example Personal Item"),
+          ).not.toBeInTheDocument();
+
+          // Now click on the "Personal" collection
+          const personalCollection = await screen.findByText("Personal");
+          fireEvent.click(personalCollection);
+
+          // Wait for the Personal collection to be selected and its bookmarks to appear
+          await waitFor(() => {
+            expect(
+              screen.getByText("Example Personal Item"),
+            ).toBeInTheDocument();
+          });
+
+          // Verify the Personal collection's bookmark is now visible
+          expect(screen.getByText("Example Personal Item")).toBeInTheDocument();
+
+          // Verify the Work collection's bookmark is no longer visible (since Personal is now selected)
+          expect(
+            screen.queryByText("Example Work Item"),
+          ).not.toBeInTheDocument();
+        });
       });
     });
   });
