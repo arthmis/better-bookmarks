@@ -628,6 +628,47 @@ describe("App Component", () => {
             screen.getByText("GitHub Example Repository"),
           ).toBeInTheDocument();
         });
+
+        it("should hide bookmarks when collection is deselected", async () => {
+          render(() => <App />);
+
+          await waitFor(() => {
+            expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+          });
+
+          // Select the Work collection which has existing bookmarks
+          const workCollection = await screen.findByText("Work");
+          fireEvent.click(workCollection);
+
+          // Wait for collection to be selected and bookmarks to be displayed
+          await waitFor(() => {
+            expect(screen.getByText("Example Work Item")).toBeInTheDocument();
+          });
+
+          // Verify the bookmark is visible
+          expect(screen.getByText("Example Work Item")).toBeInTheDocument();
+
+          // Deselect the collection by clicking it again
+          fireEvent.click(workCollection);
+
+          // Wait for deselection to take effect and bookmarks to be hidden
+          await waitFor(() => {
+            expect(
+              screen.queryByText("Example Work Item"),
+            ).not.toBeInTheDocument();
+          });
+
+          // Verify the bookmark is no longer visible
+          expect(
+            screen.queryByText("Example Work Item"),
+          ).not.toBeInTheDocument();
+
+          // Verify import button is disabled again
+          const importButton = screen.getByRole("button", {
+            name: /import tab/i,
+          });
+          expect(importButton).toBeDisabled();
+        });
       });
     });
   });
