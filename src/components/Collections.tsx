@@ -1,5 +1,6 @@
-import { For, Show } from "solid-js";
+import { For, Show, createSignal } from "solid-js";
 import { CollectionBookmark } from "./CollectionBookmarks";
+import DeleteCollectionModal from "./DeleteCollectionModal";
 
 interface Collection {
   id: string;
@@ -17,7 +18,7 @@ interface CollectionItemProps {
     id: Collection,
     currentExpandedCollections: string[],
   ) => void;
-  onDeleteCollection?: (id: string) => void;
+  onDeleteCollection?: (id: string, name: string) => void;
   expandedPath: string[];
   setCurrentExpandedCollections: (path: string[]) => void;
   currentExpandedCollections: string[];
@@ -96,7 +97,10 @@ function CollectionItem(props: CollectionItemProps) {
             aria-label="Delete Collection"
             onClick={(e) => {
               e.stopPropagation();
-              props.onDeleteCollection?.(props.collection.id);
+              props.onDeleteCollection?.(
+                props.collection.id,
+                props.collection.name,
+              );
             }}
             class="btn btn-square btn-ghost btn-xs ml-2"
           >
@@ -152,6 +156,30 @@ interface CollectionsProps {
 }
 
 export default function Collections(props: CollectionsProps) {
+  const [deleteModalOpen, setDeleteModalOpen] = createSignal(false);
+  const [collectionToDelete, setCollectionToDelete] = createSignal<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  const handleDeleteClick = (collectionId: string, collectionName: string) => {
+    setCollectionToDelete({ id: collectionId, name: collectionName });
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    const toDelete = collectionToDelete();
+    if (toDelete) {
+      props.onDeleteCollection?.(toDelete.id);
+      setDeleteModalOpen(false);
+      setCollectionToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteModalOpen(false);
+    setCollectionToDelete(null);
+  };
   return (
     <div class="w-[300px] h-full bg-gray-100 border-r border-gray-300 overflow-auto font-sans">
       <div class="p-4 border-b border-gray-300 bg-white sticky top-0 z-10">
@@ -165,7 +193,7 @@ export default function Collections(props: CollectionsProps) {
                 collection={collection}
                 selectedCollectionId={props.selectedCollectionId}
                 onSelectCollection={props.onSelectCollection}
-                onDeleteCollection={props.onDeleteCollection}
+                onDeleteCollection={handleDeleteClick}
                 expandedPath={[...props.path, collection.id]}
                 setCurrentExpandedCollections={
                   props.setCurrentExpandedCollections
@@ -176,6 +204,13 @@ export default function Collections(props: CollectionsProps) {
           )}
         </For>
       </ul>
+
+      <DeleteCollectionModal
+        isOpen={deleteModalOpen()}
+        collectionName={collectionToDelete()?.name || ""}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </div>
   );
 }
