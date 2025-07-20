@@ -870,5 +870,85 @@ describe("App Component", () => {
         });
       });
     });
+
+    describe("Collection Deletion", () => {
+      it("should show delete button only when a collection is selected", async () => {
+        render(<App />);
+
+        // Wait for collections to load
+        await waitFor(() => {
+          expect(screen.getByText("Work")).toBeInTheDocument();
+        });
+
+        // Initially no delete button should be visible
+        expect(
+          screen.queryByLabelText("Delete Collection"),
+        ).not.toBeInTheDocument();
+
+        // Select a collection
+        fireEvent.click(screen.getByText("Work"));
+
+        // Delete button should now be visible
+        await waitFor(() => {
+          expect(
+            screen.getByLabelText("Delete Collection"),
+          ).toBeInTheDocument();
+        });
+      });
+
+      it("should not show delete button when no collection is selected", async () => {
+        render(<App />);
+
+        // Wait for collections to load
+        await waitFor(() => {
+          expect(screen.getByText("Work")).toBeInTheDocument();
+        });
+
+        // No collection selected - delete button should not be visible
+        expect(
+          screen.queryByLabelText("Delete Collection"),
+        ).not.toBeInTheDocument();
+      });
+
+      it("should delete collection and hide its children when delete button is clicked", async () => {
+        render(<App />);
+
+        // Wait for collections to load
+        await waitFor(() => {
+          expect(screen.getByText("Work")).toBeInTheDocument();
+          expect(screen.getByText("Personal")).toBeInTheDocument();
+        });
+
+        // Select the Work collection (which has subcollections)
+        fireEvent.click(screen.getByText("Work"));
+
+        // Verify subcollections are visible
+        await waitFor(() => {
+          expect(screen.getByText("Projects")).toBeInTheDocument();
+          expect(screen.getByText("Documentation")).toBeInTheDocument();
+        });
+
+        // Click delete button
+        const deleteButton = await waitFor(() => {
+          return screen.getByLabelText("Delete Collection");
+        });
+        fireEvent.click(deleteButton);
+
+        // Work collection and its children should no longer be visible
+        await waitFor(() => {
+          expect(screen.queryByText("Work")).not.toBeInTheDocument();
+          expect(screen.queryByText("Projects")).not.toBeInTheDocument();
+          expect(screen.queryByText("Documentation")).not.toBeInTheDocument();
+        });
+
+        // Personal collection should still be visible
+        expect(screen.getByText("Personal")).toBeInTheDocument();
+
+        // Delete button should no longer be visible since no collection is selected
+        expect(
+          screen.queryByLabelText("Delete Collection"),
+        ).not.toBeInTheDocument();
+      });
+    });
   });
 });
