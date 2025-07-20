@@ -231,4 +231,177 @@ describe("App Component", () => {
 
     expect(importButton).toHaveAttribute("disabled");
   });
+
+  describe("Add Collection User Stories", () => {
+    describe("User Story 1: Add Collection Button Shows Alert Dialog", () => {
+      it("should show alert dialog when user clicks the add collection button", async () => {
+        // Mock window.prompt
+        const mockPrompt = vi.fn().mockReturnValue(null);
+        globalThis.window.prompt = mockPrompt;
+
+        render(() => <App />);
+
+        // Wait for data to load
+        await waitFor(() => {
+          expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+        });
+
+        // Find and click the Add Collection button
+        const addButton = await screen.findByRole("button", {
+          name: /add collection/i,
+        });
+        fireEvent.click(addButton);
+
+        // User should see an alert dialog to input text for collection name
+        expect(mockPrompt).toHaveBeenCalledWith("Enter collection name:");
+        expect(mockPrompt).toHaveBeenCalledTimes(1);
+      });
+
+      it("should not add collection when user cancels the dialog", async () => {
+        // Mock window.prompt to return null (user cancels)
+        const mockPrompt = vi.fn().mockReturnValue(null);
+        globalThis.window.prompt = mockPrompt;
+
+        render(() => <App />);
+
+        // Wait for data to load
+        await waitFor(() => {
+          expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+        });
+
+        // Click the Add Collection button
+        const addButton = await screen.findByRole("button", {
+          name: /add collection/i,
+        });
+        fireEvent.click(addButton);
+
+        // Verify prompt was called but storage.set was not called for new collection
+        expect(mockPrompt).toHaveBeenCalled();
+
+        // Only the initial get call should have been made, no set call for new collection
+        expect(globalThis.browser.storage.local.set).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("User Story 2: User Inputs 'collection 1' and Collection Becomes Visible", () => {
+      it("should add and display 'collection 1' when user inputs that name", async () => {
+        // Mock window.prompt to return "collection 1"
+        const mockPrompt = vi.fn().mockReturnValue("collection 1");
+        globalThis.window.prompt = mockPrompt;
+
+        render(() => <App />);
+
+        // Wait for initial data to load
+        await waitFor(() => {
+          expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+        });
+
+        // Verify initial collections are displayed
+        expect(await screen.findByText("Work")).toBeInTheDocument();
+        expect(await screen.findByText("Personal")).toBeInTheDocument();
+
+        // Click the Add Collection button
+        const addButton = await screen.findByRole("button", {
+          name: /add collection/i,
+        });
+        fireEvent.click(addButton);
+
+        // User inputs "collection 1" as the collection name
+        expect(mockPrompt).toHaveBeenCalledWith("Enter collection name:");
+
+        // Wait for the new collection to be stored and the UI to update
+        await waitFor(() => {
+          expect(globalThis.browser.storage.local.set).toHaveBeenCalled();
+        });
+
+        // The collection name should be visible in the collections panel
+        await waitFor(() => {
+          expect(screen.getByText("collection 1")).toBeInTheDocument();
+        });
+      });
+
+      it("should add multiple collections and display them all", async () => {
+        const collectionNames = ["collection 1", "collection 2", "My Books"];
+        let promptCallCount = 0;
+
+        const mockPrompt = vi.fn().mockImplementation(() => {
+          return collectionNames[promptCallCount++] || null;
+        });
+        globalThis.window.prompt = mockPrompt;
+
+        render(() => <App />);
+
+        await waitFor(() => {
+          expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+        });
+
+        const addButton = await screen.findByRole("button", {
+          name: /add collection/i,
+        });
+
+        // Add each collection
+        for (const name of collectionNames) {
+          fireEvent.click(addButton);
+
+          await waitFor(() => {
+            expect(screen.getByText(name)).toBeInTheDocument();
+          });
+        }
+
+        // Verify all collections are visible
+        for (const name of collectionNames) {
+          expect(screen.getByText(name)).toBeInTheDocument();
+        }
+
+        // Verify original collections are still there
+        expect(screen.getByText("Work")).toBeInTheDocument();
+        expect(screen.getByText("Personal")).toBeInTheDocument();
+      });
+
+      it("should trim whitespace from collection name before adding", async () => {
+        const mockPrompt = vi.fn().mockReturnValue("  collection 1  ");
+        globalThis.window.prompt = mockPrompt;
+
+        render(() => <App />);
+
+        await waitFor(() => {
+          expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+        });
+
+        const addButton = await screen.findByRole("button", {
+          name: /add collection/i,
+        });
+        fireEvent.click(addButton);
+
+        // The trimmed collection name should be visible
+        await waitFor(() => {
+          expect(screen.getByText("collection 1")).toBeInTheDocument();
+        });
+
+        // Verify no collection with untrimmed name exists
+        expect(screen.queryByText("  collection 1  ")).not.toBeInTheDocument();
+      });
+
+      it("should handle special characters in collection names", async () => {
+        const specialName = "Collection! @#$%^&*()_+-={}[]|\\:;\"'<>?,./ 1";
+        const mockPrompt = vi.fn().mockReturnValue(specialName);
+        globalThis.window.prompt = mockPrompt;
+
+        render(() => <App />);
+
+        await waitFor(() => {
+          expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+        });
+
+        const addButton = await screen.findByRole("button", {
+          name: /add collection/i,
+        });
+        fireEvent.click(addButton);
+
+        await waitFor(() => {
+          expect(screen.getByText(specialName)).toBeInTheDocument();
+        });
+      });
+    });
+  });
 });
