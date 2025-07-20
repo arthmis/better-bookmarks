@@ -769,6 +769,47 @@ describe("App Component", () => {
           });
           expect(importButton).not.toBeDisabled();
         });
+
+        it("should remove bookmark from view when delete button with trash icon is clicked", async () => {
+          render(() => <App />);
+
+          await waitFor(() => {
+            expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+          });
+
+          // Select the "Work" collection which has "Example Work Item" bookmark
+          const workCollection = await screen.findByText("Work");
+          fireEvent.click(workCollection);
+
+          // Wait for the bookmark to be displayed
+          await waitFor(() => {
+            expect(screen.getByText("Example Work Item")).toBeInTheDocument();
+          });
+
+          // Verify the bookmark is initially visible
+          expect(screen.getByText("Example Work Item")).toBeInTheDocument();
+
+          // Find and click the delete button with trash icon
+          const deleteButton = screen.getByRole("button", {
+            name: "Delete Bookmark",
+          });
+          fireEvent.click(deleteButton);
+
+          // Wait for the bookmark to be removed from the UI
+          await waitFor(() => {
+            expect(
+              screen.queryByText("Example Work Item"),
+            ).not.toBeInTheDocument();
+          });
+
+          // Verify the bookmark is no longer visible
+          expect(
+            screen.queryByText("Example Work Item"),
+          ).not.toBeInTheDocument();
+
+          // Verify storage was updated (delete operation called storage.set)
+          expect(globalThis.browser.storage.local.set).toHaveBeenCalled();
+        });
       });
     });
   });

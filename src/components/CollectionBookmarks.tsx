@@ -59,10 +59,11 @@ export default function CollectionBookmarksComponent(
                     </div>
                   </div>
                   <button
+                    aria-label="Delete Bookmark"
                     onClick={() => props.handleDeleteBookmark(bookmark.id)}
                     class="btn btn-square btn-ghost"
                   >
-                    <img src="/assets/trash.svg" alt="Delete" />
+                    <img src="/assets/trash.svg" alt="" />
                   </button>
                 </li>
               );
