@@ -104,7 +104,6 @@ export default function App() {
 
     try {
       await updateAndStoreCollections(updateCollections(collections()));
-      console.log("stored new collection");
     } catch (error) {
       console.error("Failed to add or update collection:", error);
       showErrorToast("Failed to add or update collection. Please try again.");
@@ -116,7 +115,6 @@ export default function App() {
   ): Promise<void> => {
     setCollections(collections);
     await browser.storage.local.set({ collections });
-    console.log("stored updated collections");
     return;
   };
 
@@ -190,7 +188,6 @@ export default function App() {
 
     try {
       await updateAndStoreCollections(updateCollections(collections()));
-      console.log("stored new collection");
     } catch (error) {
       console.error("Failed to add bookmark to collection:", error);
       showErrorToast("Failed to add bookmark to collection. Please try again.");
@@ -217,12 +214,14 @@ export default function App() {
           title: "",
           bookmarks: [],
         });
-        setCurrentExpandedCollections([]);
-      }
 
-      console.log("deleted collection");
+        // Remove the deleted collection from expanded collections but keep ancestors
+        let idIndex = currentExpandedCollections().indexOf(collectionId);
+        setCurrentExpandedCollections(
+          currentExpandedCollections().toSpliced(idIndex),
+        );
+      }
     } catch (error) {
-      console.error("Failed to delete collection:", error);
       showErrorToast("Failed to delete collection. Please try again.");
     }
   };
@@ -253,7 +252,6 @@ export default function App() {
 
     try {
       await updateAndStoreCollections(updateCollections(collections()));
-      console.log("deleted bookmark");
     } catch (error) {
       console.error("Failed to delete bookmark:", error);
       showErrorToast("Failed to delete bookmark. Please try again.");

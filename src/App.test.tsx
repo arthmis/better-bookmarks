@@ -949,6 +949,41 @@ describe("App Component", () => {
           screen.queryByLabelText("Delete Collection"),
         ).not.toBeInTheDocument();
       });
+
+      it("should keep ancestor collections expanded when deleting a subcollection", async () => {
+        render(<App />);
+
+        // Wait for collections to load
+        await waitFor(() => {
+          expect(screen.getByText("Work")).toBeInTheDocument();
+        });
+
+        // Select the Work collection to expand it and see subcollections
+        fireEvent.click(screen.getByText("Work"));
+
+        await waitFor(() => {
+          expect(screen.getByText("Projects")).toBeInTheDocument();
+          expect(screen.getByText("Documentation")).toBeInTheDocument();
+        });
+
+        // Select the Projects subcollection
+        fireEvent.click(screen.getByText("Projects"));
+
+        // Verify the delete button appears for Projects
+        const deleteButton = await waitFor(() => {
+          return screen.getByLabelText("Delete Collection");
+        });
+
+        // Delete the Projects subcollection
+        fireEvent.click(deleteButton);
+
+        // Projects should be deleted but Work should still be expanded with Documentation visible
+        await waitFor(() => {
+          expect(screen.queryByText("Projects")).not.toBeInTheDocument();
+          expect(screen.getByText("Work")).toBeInTheDocument();
+          expect(screen.getByText("Documentation")).toBeInTheDocument();
+        });
+      });
     });
   });
 });
