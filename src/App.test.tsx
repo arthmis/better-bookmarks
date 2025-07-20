@@ -16,7 +16,26 @@ const mockCollections = [
         updatedAt: new Date(),
       },
     ],
-    subcollections: [],
+    subcollections: [
+      {
+        id: "1-1",
+        name: "Projects",
+        items: [],
+        subcollections: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "1-2",
+        name: "Documentation",
+        items: [],
+        subcollections: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ],
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
   {
     id: "2",
@@ -31,6 +50,8 @@ const mockCollections = [
       },
     ],
     subcollections: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
   },
 ];
 
@@ -809,6 +830,43 @@ describe("App Component", () => {
 
           // Verify storage was updated (delete operation called storage.set)
           expect(globalThis.browser.storage.local.set).toHaveBeenCalled();
+        });
+
+        it("should show subcollections when parent collection is selected and hide them when deselected", async () => {
+          render(() => <App />);
+
+          await waitFor(() => {
+            expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+          });
+
+          // Initially, subcollections should not be visible
+          expect(screen.queryByText("Projects")).not.toBeInTheDocument();
+          expect(screen.queryByText("Documentation")).not.toBeInTheDocument();
+
+          // Select the "Work" collection which has subcollections
+          const workCollection = await screen.findByText("Work");
+          fireEvent.click(workCollection);
+
+          // Wait for the collection to be selected and subcollections to appear
+          await waitFor(() => {
+            expect(screen.getByText("Projects")).toBeInTheDocument();
+          });
+
+          // Verify both subcollections are now visible
+          expect(screen.getByText("Projects")).toBeInTheDocument();
+          expect(screen.getByText("Documentation")).toBeInTheDocument();
+
+          // Deselect the collection by clicking it again
+          fireEvent.click(workCollection);
+
+          // Wait for subcollections to be hidden
+          await waitFor(() => {
+            expect(screen.queryByText("Projects")).not.toBeInTheDocument();
+          });
+
+          // Verify both subcollections are no longer visible
+          expect(screen.queryByText("Projects")).not.toBeInTheDocument();
+          expect(screen.queryByText("Documentation")).not.toBeInTheDocument();
         });
       });
     });
