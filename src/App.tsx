@@ -197,6 +197,36 @@ export default function App() {
     }
   };
 
+  const handleDeleteCollection = async (collectionId: string) => {
+    const removeCollection = (collections: Collection[]): Collection[] =>
+      collections
+        .filter((collection) => collection.id !== collectionId)
+        .map((collection) => ({
+          ...collection,
+          subcollections: removeCollection(collection.subcollections),
+        }));
+
+    try {
+      const updatedCollections = removeCollection(collections());
+      await updateAndStoreCollections(updatedCollections);
+
+      // If the deleted collection was selected, clear the selection
+      if (selectedCollectionId() === collectionId) {
+        setSelectedCollectionId(undefined);
+        setBookmarkItems({
+          title: "",
+          bookmarks: [],
+        });
+        setCurrentExpandedCollections([]);
+      }
+
+      console.log("deleted collection");
+    } catch (error) {
+      console.error("Failed to delete collection:", error);
+      showErrorToast("Failed to delete collection. Please try again.");
+    }
+  };
+
   const handleDeleteBookmark = async (bookmarkId: string) => {
     const updateCollections = (collections: Collection[]): Collection[] =>
       collections.map((collection) => {
@@ -279,6 +309,7 @@ export default function App() {
               collections={collections()}
               selectedCollectionId={selectedCollectionId()}
               onSelectCollection={handleSelectCollection}
+              onDeleteCollection={handleDeleteCollection}
               path={[]}
               setCurrentExpandedCollections={setCurrentExpandedCollections}
               currentExpandedCollections={currentExpandedCollections()}

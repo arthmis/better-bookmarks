@@ -17,6 +17,7 @@ interface CollectionItemProps {
     id: Collection,
     currentExpandedCollections: string[],
   ) => void;
+  onDeleteCollection?: (id: string) => void;
   expandedPath: string[];
   setCurrentExpandedCollections: (path: string[]) => void;
   currentExpandedCollections: string[];
@@ -90,6 +91,18 @@ function CollectionItem(props: CollectionItemProps) {
         >
           ({totalItemCount()})
         </span>
+        <Show when={props.selectedCollectionId === props.collection.id}>
+          <button
+            aria-label="Delete Collection"
+            onClick={(e) => {
+              e.stopPropagation();
+              props.onDeleteCollection?.(props.collection.id);
+            }}
+            class="btn btn-square btn-ghost btn-xs ml-2"
+          >
+            <img src="/assets/trash.svg" alt="" class="w-3 h-3" />
+          </button>
+        </Show>
       </div>
 
       <Show when={isExpanded()}>
@@ -104,6 +117,7 @@ function CollectionItem(props: CollectionItemProps) {
                       collection={subcollection}
                       selectedCollectionId={props.selectedCollectionId}
                       onSelectCollection={props.onSelectCollection}
+                      onDeleteCollection={props.onDeleteCollection}
                       expandedPath={[...props.expandedPath, subcollection.id]}
                       setCurrentExpandedCollections={
                         props.setCurrentExpandedCollections
@@ -129,6 +143,7 @@ interface CollectionsProps {
     id: Collection,
     currentExpandedCollections: string[],
   ) => void;
+  onDeleteCollection?: (id: string) => void;
   collections: Collection[];
   onAddCollection?: (name: string) => void;
   path: string[];
@@ -150,6 +165,7 @@ export default function Collections(props: CollectionsProps) {
                 collection={collection}
                 selectedCollectionId={props.selectedCollectionId}
                 onSelectCollection={props.onSelectCollection}
+                onDeleteCollection={props.onDeleteCollection}
                 expandedPath={[...props.path, collection.id]}
                 setCurrentExpandedCollections={
                   props.setCurrentExpandedCollections
