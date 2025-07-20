@@ -1,4 +1,4 @@
-import { createSignal, For, Show } from "solid-js";
+import { For, Show } from "solid-js";
 import { CollectionBookmark } from "./CollectionBookmarks";
 
 interface Collection {
@@ -12,7 +12,6 @@ interface Collection {
 
 interface CollectionItemProps {
   collection: Collection;
-  level?: number;
   selectedCollectionId?: string;
   onSelectCollection?: (
     id: Collection,
@@ -29,7 +28,6 @@ function CollectionItem(props: CollectionItemProps) {
   const isExpanded = () =>
     props.currentExpandedCollections.includes(props.collection.id) ||
     props.selectedCollectionId === props.collection.id;
-  const level = () => props.level || 0;
 
   const hasChildren = () =>
     props.collection.subcollections.length > 0 ||
@@ -61,8 +59,6 @@ function CollectionItem(props: CollectionItemProps) {
           "bg-secondary text-white":
             props.selectedCollectionId === props.collection.id,
         }}
-        // TODO: figure out how to use flex and padding to do this below
-        style={{ "padding-left": `${level() * 20 + 16}px` }}
         onClick={(e) => {
           e.stopPropagation();
           props.onSelectCollection?.(props.collection, props.expandedPath);
@@ -103,19 +99,20 @@ function CollectionItem(props: CollectionItemProps) {
             <For each={props.collection.subcollections}>
               {(subcollection) => (
                 <li>
-                  <CollectionItem
-                    collection={subcollection}
-                    level={level() + 1}
-                    selectedCollectionId={props.selectedCollectionId}
-                    onSelectCollection={props.onSelectCollection}
-                    expandedPath={[...props.expandedPath, subcollection.id]}
-                    setCurrentExpandedCollections={
-                      props.setCurrentExpandedCollections
-                    }
-                    currentExpandedCollections={
-                      props.currentExpandedCollections
-                    }
-                  />
+                  <div class="pl-5">
+                    <CollectionItem
+                      collection={subcollection}
+                      selectedCollectionId={props.selectedCollectionId}
+                      onSelectCollection={props.onSelectCollection}
+                      expandedPath={[...props.expandedPath, subcollection.id]}
+                      setCurrentExpandedCollections={
+                        props.setCurrentExpandedCollections
+                      }
+                      currentExpandedCollections={
+                        props.currentExpandedCollections
+                      }
+                    />
+                  </div>
                 </li>
               )}
             </For>
