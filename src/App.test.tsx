@@ -8,7 +8,13 @@ const mockCollections = [
     id: "1",
     name: "Work",
     items: [
-      { id: "1", title: "Example Work Item", url: "https://work.example.com" },
+      {
+        id: "1",
+        title: "Example Work Item",
+        url: "https://work.example.com",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ],
     subcollections: [],
   },
@@ -20,6 +26,8 @@ const mockCollections = [
         id: "2",
         title: "Example Personal Item",
         url: "https://personal.example.com",
+        createdAt: new Date(),
+        updatedAt: new Date(),
       },
     ],
     subcollections: [],
@@ -144,5 +152,83 @@ describe("App Component", () => {
     // Should show error message instead of buttons
     const errorMessage = await screen.findByText("Error fetching bookmarks");
     expect(errorMessage).toBeInTheDocument();
+  });
+
+  it("should keep import button disabled when no collection is selected", async () => {
+    render(() => <App />);
+
+    // Wait for data to load
+    await waitFor(() => {
+      expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+    });
+
+    const importButton = await screen.findByRole("button", {
+      name: /import tab/i,
+    });
+
+    // Import button should be disabled initially (no collection selected)
+    expect(importButton).toBeDisabled();
+    expect(importButton).toHaveAttribute("disabled");
+
+    // Clicking the disabled button should not trigger any action
+    fireEvent.click(importButton);
+
+    // Verify that browser.tabs.query was not called (no import attempted)
+    expect(globalThis.browser.tabs.query).not.toHaveBeenCalled();
+  });
+
+  it("should enable import button when a collection is selected", async () => {
+    render(() => <App />);
+
+    // Wait for data to load
+    await waitFor(() => {
+      expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+    });
+
+    const importButton = await screen.findByRole("button", {
+      name: /import tab/i,
+    });
+
+    // Initially disabled
+    expect(importButton).toBeDisabled();
+
+    // Click on a collection to select it
+    const workCollection = await screen.findByText("Work");
+    fireEvent.click(workCollection);
+
+    // Wait for the selection to take effect
+    await waitFor(() => {
+      expect(importButton).not.toBeDisabled();
+    });
+
+    expect(importButton).not.toHaveAttribute("disabled");
+  });
+
+  it("should disable import button again when collection is deselected", async () => {
+    render(() => <App />);
+
+    // Wait for data to load
+    await waitFor(() => {
+      expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+    });
+
+    const importButton = await screen.findByRole("button", {
+      name: /import tab/i,
+    });
+    const workCollection = await screen.findByText("Work");
+
+    // Select a collection
+    fireEvent.click(workCollection);
+    await waitFor(() => {
+      expect(importButton).not.toBeDisabled();
+    });
+
+    // Deselect the same collection by clicking it again
+    fireEvent.click(workCollection);
+    await waitFor(() => {
+      expect(importButton).toBeDisabled();
+    });
+
+    expect(importButton).toHaveAttribute("disabled");
   });
 });
