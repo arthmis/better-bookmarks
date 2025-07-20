@@ -402,6 +402,233 @@ describe("App Component", () => {
           expect(screen.getByText(specialName)).toBeInTheDocument();
         });
       });
+
+      describe("Tab Import Functionality", () => {
+        beforeEach(() => {
+          // Set up a more detailed mock tab for import testing
+          globalThis.browser.tabs.query = vi.fn().mockResolvedValue([
+            {
+              id: 1,
+              url: "https://github.com/example/repo",
+              title: "GitHub Example Repository",
+              active: true,
+              favIconUrl: "https://github.com/favicon.ico",
+            },
+          ]);
+        });
+
+        it("should import selected tab and display it when collection is selected and import button is clicked", async () => {
+          render(() => <App />);
+
+          // Wait for data to load
+          await waitFor(() => {
+            expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+          });
+
+          // Select the "Work" collection
+          const workCollection = await screen.findByText("Work");
+          fireEvent.click(workCollection);
+
+          // Wait for collection to be selected and import button to be enabled
+          const importButton = await screen.findByRole("button", {
+            name: /import tab/i,
+          });
+          await waitFor(() => {
+            expect(importButton).not.toBeDisabled();
+          });
+
+          // Click the import button
+          fireEvent.click(importButton);
+
+          // Wait for the tab to be imported and displayed
+          // TODO: fix this, potentially brittle. Shouldn't check what the function query is called with
+          await waitFor(() => {
+            expect(globalThis.browser.tabs.query).toHaveBeenCalledWith({
+              currentWindow: true,
+              highlighted: true,
+            });
+          });
+
+          // Verify the imported tab name is displayed
+          await waitFor(() => {
+            expect(
+              screen.getByText("GitHub Example Repository"),
+            ).toBeInTheDocument();
+          });
+
+          // Verify the origin (domain) of the tab's URL is displayed
+          await waitFor(() => {
+            expect(screen.getByText("github.com")).toBeInTheDocument();
+          });
+
+          // Verify that storage was updated with the new bookmark
+          expect(globalThis.browser.storage.local.set).toHaveBeenCalled();
+        });
+
+        it("should display the import date for the imported tab", async () => {
+          // Mock Date.now to return a fixed timestamp for consistent testing
+          const mockDate = new Date("2024-01-15T10:30:00Z");
+          vi.useFakeTimers();
+          vi.setSystemTime(mockDate);
+
+          render(() => <App />);
+
+          await waitFor(() => {
+            expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+          });
+
+          // Select collection and import tab
+          const workCollection = await screen.findByText("Work");
+          fireEvent.click(workCollection);
+
+          const importButton = await screen.findByRole("button", {
+            name: /import tab/i,
+          });
+          await waitFor(() => {
+            expect(importButton).not.toBeDisabled();
+          });
+
+          fireEvent.click(importButton);
+
+          // Wait for import to complete
+          await waitFor(() => {
+            expect(globalThis.browser.tabs.query).toHaveBeenCalled();
+          });
+
+          // Check that the date is displayed (format may vary, but should contain date info)
+          await waitFor(() => {
+            // Look for date-like text patterns
+            // TODO: see if this is a good way to check for date elements
+            const dateElements = screen.getAllByText(/Jan|15|2024|1\/15\/2024/);
+            expect(dateElements.length).toBeGreaterThan(0);
+          });
+
+          vi.useRealTimers();
+        });
+
+        it("should handle multiple tab imports to the same collection", async () => {
+          // Mock multiple tabs
+          globalThis.browser.tabs.query = vi.fn().mockResolvedValueOnce([
+            {
+              id: 1,
+              url: "https://github.com/example/repo1",
+              title: "First Repository",
+              active: true,
+              highlighted: true,
+            },
+            {
+              id: 2,
+              url: "https://stackoverflow.com/questions/123",
+              title: "Stack Overflow Question",
+              highlighted: true,
+            },
+          ]);
+
+          render(() => <App />);
+
+          await waitFor(() => {
+            expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+          });
+
+          // Select collection
+          const workCollection = await screen.findByText("Work");
+          fireEvent.click(workCollection);
+
+          const importButton = await screen.findByRole("button", {
+            name: /import tab/i,
+          });
+
+          // Import both tabs
+          fireEvent.click(importButton);
+
+          await waitFor(() => {
+            expect(screen.getByText("First Repository")).toBeInTheDocument();
+          });
+
+          await waitFor(() => {
+            expect(
+              screen.getByText("Stack Overflow Question"),
+            ).toBeInTheDocument();
+          });
+
+          // Both tabs should be visible
+          expect(screen.getByText("First Repository")).toBeInTheDocument();
+          expect(
+            screen.getByText("Stack Overflow Question"),
+          ).toBeInTheDocument();
+          expect(screen.getByText("github.com")).toBeInTheDocument();
+          expect(screen.getByText("stackoverflow.com")).toBeInTheDocument();
+        });
+
+        it("should show error toast when tab import fails", async () => {
+          // Mock tabs.query to fail
+          globalThis.browser.tabs.query = vi
+            .fn()
+            .mockRejectedValue(new Error("Tab access denied"));
+
+          render(() => <App />);
+
+          await waitFor(() => {
+            expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+          });
+
+          // Select collection and try to import
+          const workCollection = await screen.findByText("Work");
+          fireEvent.click(workCollection);
+
+          const importButton = await screen.findByRole("button", {
+            name: /import tab/i,
+          });
+          await waitFor(() => {
+            expect(importButton).not.toBeDisabled();
+          });
+
+          fireEvent.click(importButton);
+
+          // Wait for error to occur and error toast to appear
+          await waitFor(() => {
+            expect(
+              screen.getByText("Failed to save selected tab(s)."),
+            ).toBeInTheDocument();
+          });
+        });
+
+        it("should preserve existing bookmarks when importing new tabs", async () => {
+          render(() => <App />);
+
+          await waitFor(() => {
+            expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+          });
+
+          // Select the Work collection which already has "Example Work Item"
+          const workCollection = await screen.findByText("Work");
+          fireEvent.click(workCollection);
+
+          // Should see the existing bookmark
+          await waitFor(() => {
+            expect(screen.getByText("Example Work Item")).toBeInTheDocument();
+          });
+
+          // Import a new tab
+          const importButton = await screen.findByRole("button", {
+            name: /import tab/i,
+          });
+          fireEvent.click(importButton);
+
+          // Wait for import to complete
+          await waitFor(() => {
+            expect(
+              screen.getByText("GitHub Example Repository"),
+            ).toBeInTheDocument();
+          });
+
+          // Both the existing and new bookmark should be visible
+          expect(screen.getByText("Example Work Item")).toBeInTheDocument();
+          expect(
+            screen.getByText("GitHub Example Repository"),
+          ).toBeInTheDocument();
+        });
+      });
     });
   });
 });
