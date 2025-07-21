@@ -4,25 +4,24 @@
 $ npm install # or pnpm install or yarn install
 ```
 
-### Learn more on the [Solid Website](https://solidjs.com) and come chat with us on our [Discord](https://discord.com/invite/solidjs)
-
 ## Available Scripts
 
 In the project directory, you can run:
 
-### `npm run dev`
+```
+npm run build
+```
 
-Runs the app in the development mode.<br>
-Open [http://localhost:5173](http://localhost:5173) to view it in the browser.
+Since this is an extension for Firefox to use it in your browser locally, you need to go to `about:debugging` in your URL bar.
+Click on `This Firefox` on the left menu and click on `Load Temporary Add-on`. Select the manifest.json file found in the `dist` 
+folder created when you ran `npm run build`.
 
-### `npm run build`
+After that the extension should be loaded, you can click the extensions menu in the toolbar on the top right and should see
+the bookmark icon that represents the app. Feel free to pin it to make access a little easier. Now you can click it and import
+tabs that you've selected and group them how you want.
 
-Builds the app for production to the `dist` folder.<br>
-It correctly bundles Solid in production mode and optimizes the build for the best performance.
+Here's a video showing the basic functionality:
 
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
+https://github.com/user-attachments/assets/154b513d-ede0-4b39-9602-1217212c8e62
 
-## Deployment
 
-Learn more about deploying your application with the [documentations](https://vite.dev/guide/static-deploy.html)
