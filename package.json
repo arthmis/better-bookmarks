@@ -4,7 +4,8 @@
   "description": "```bash $ npm install # or pnpm install or yarn install ```",
   "scripts": {
     "dev": "vite",
-    "build": "vite build -w",
+    "build": "vite build",
+    "watch": "vite build -w",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
