@@ -910,7 +910,160 @@ describe("App Component", () => {
         ).not.toBeInTheDocument();
       });
 
-      it("should delete collection and hide its children when delete button is clicked", async () => {
+      it("should show confirmation modal when delete button is clicked", async () => {
+        render(<App />);
+
+        // Wait for collections to load
+        await waitFor(() => {
+          expect(screen.getByText("Work")).toBeInTheDocument();
+        });
+
+        // Select the Work collection
+        fireEvent.click(screen.getByText("Work"));
+
+        // Click delete button
+        const deleteButton = await waitFor(() => {
+          return screen.getByRole("button", { name: "Delete Collection" });
+        });
+        fireEvent.click(deleteButton);
+
+        // Modal should appear with confirmation dialog
+        await waitFor(() => {
+          expect(screen.getByRole("dialog")).toBeInTheDocument();
+          expect(
+            screen.getByText(/Are you sure you want to delete the collection/),
+          ).toBeInTheDocument();
+          expect(screen.getByText(/"Work"/)).toBeInTheDocument();
+          expect(
+            screen.getByText(/To confirm, type the collection name exactly/),
+          ).toBeInTheDocument();
+        });
+
+        expect(
+          screen.getByRole("button", { name: "Cancel" }),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: "Confirm Delete" }),
+        ).toBeInTheDocument();
+      });
+
+      it("should disable delete confirmation button when collection name doesn't match", async () => {
+        render(<App />);
+
+        // Wait for collections to load
+        await waitFor(() => {
+          expect(screen.getByText("Work")).toBeInTheDocument();
+        });
+
+        // Select the Work collection
+        fireEvent.click(screen.getByText("Work"));
+
+        // Click delete button to open modal
+        const deleteButton = await waitFor(() => {
+          return screen.getByLabelText("Delete Collection");
+        });
+        fireEvent.click(deleteButton);
+
+        // Wait for modal to appear
+        await waitFor(() => {
+          expect(screen.getByRole("dialog")).toBeInTheDocument();
+        });
+
+        const confirmButton = screen.getByRole("button", {
+          name: "Confirm Delete",
+        });
+
+        // Initially button should be disabled
+        expect(confirmButton).toBeDisabled();
+
+        const input = screen.getByLabelText(
+          "To confirm, type the collection name exactly as shown above:",
+        );
+
+        // Type incorrect name
+        fireEvent.input(input, { target: { value: "wrong name" } });
+        expect(confirmButton).toBeDisabled();
+
+        // Type partial correct name
+        fireEvent.input(input, { target: { value: "Wor" } });
+        expect(confirmButton).toBeDisabled();
+
+        // Type correct name with extra spaces
+        fireEvent.input(input, { target: { value: " Work " } });
+        expect(confirmButton).toBeDisabled();
+
+        // Type exact correct name
+        fireEvent.input(input, { target: { value: "Work" } });
+        expect(confirmButton).not.toBeDisabled();
+      });
+
+      it("should cancel deletion when cancel button is clicked", async () => {
+        render(<App />);
+
+        // Wait for collections to load
+        await waitFor(() => {
+          expect(screen.getByText("Work")).toBeInTheDocument();
+        });
+
+        // Select the Work collection
+        fireEvent.click(screen.getByText("Work"));
+
+        // Click delete button to open modal
+        const deleteButton = await waitFor(() => {
+          return screen.getByLabelText("Delete Collection");
+        });
+        fireEvent.click(deleteButton);
+
+        // Wait for modal to appear
+        await waitFor(() => {
+          expect(screen.getByRole("dialog")).toBeInTheDocument();
+        });
+
+        // Click cancel button
+        const cancelButton = screen.getByRole("button", { name: "Cancel" });
+        fireEvent.click(cancelButton);
+
+        // Modal should disappear and collection should still exist
+        await waitFor(() => {
+          expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        });
+        expect(screen.getAllByText("Work").length).toBeGreaterThan(0);
+      });
+
+      it("should cancel deletion when X button is clicked", async () => {
+        render(<App />);
+
+        // Wait for collections to load
+        await waitFor(() => {
+          expect(screen.getByText("Work")).toBeInTheDocument();
+        });
+
+        // Select the Work collection
+        fireEvent.click(screen.getByText("Work"));
+
+        // Click delete button to open modal
+        const deleteButton = await waitFor(() => {
+          return screen.getByLabelText("Delete Collection");
+        });
+        fireEvent.click(deleteButton);
+
+        // Wait for modal to appear
+        await waitFor(() => {
+          expect(screen.getByRole("dialog")).toBeInTheDocument();
+        });
+
+        // Click X button in top corner
+        const closeButton = screen.getByText("✕");
+        fireEvent.click(closeButton);
+
+        // Modal should disappear and collection should still exist
+        await waitFor(() => {
+          expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        });
+        expect(screen.getAllByText("Work").length).toBeGreaterThan(0);
+      });
+
+      it("should delete collection and hide its children when correct name is entered and confirmed", async () => {
         render(<App />);
 
         // Wait for collections to load
@@ -928,11 +1081,29 @@ describe("App Component", () => {
           expect(screen.getByText("Documentation")).toBeInTheDocument();
         });
 
-        // Click delete button
+        // Click delete button to open modal
         const deleteButton = await waitFor(() => {
           return screen.getByLabelText("Delete Collection");
         });
         fireEvent.click(deleteButton);
+
+        // Wait for modal to appear
+        await waitFor(() => {
+          expect(screen.getByRole("dialog")).toBeInTheDocument();
+        });
+
+        // Type correct collection name and confirm deletion
+        const input = screen.getByLabelText(
+          "To confirm, type the collection name exactly as shown above:",
+        );
+        // Type correct collection name
+        fireEvent.input(input, { target: { value: "Work" } });
+
+        // Click confirm delete button
+        const confirmButton = screen.getByRole("button", {
+          name: "Confirm Delete",
+        });
+        fireEvent.click(confirmButton);
 
         // Work collection and its children should no longer be visible
         await waitFor(() => {
@@ -974,8 +1145,24 @@ describe("App Component", () => {
           return screen.getByLabelText("Delete Collection");
         });
 
-        // Delete the Projects subcollection
+        // Click delete button to open modal
         fireEvent.click(deleteButton);
+
+        // Wait for modal to appear
+        await waitFor(() => {
+          expect(screen.getByRole("dialog")).toBeInTheDocument();
+        });
+
+        // Type correct collection name and confirm deletion
+        const input = screen.getByLabelText(
+          "To confirm, type the collection name exactly as shown above:",
+        );
+        fireEvent.input(input, { target: { value: "Projects" } });
+
+        const confirmButton = screen.getByRole("button", {
+          name: "Confirm Delete",
+        });
+        fireEvent.click(confirmButton);
 
         // Projects should be deleted but Work should still be expanded with Documentation visible
         await waitFor(() => {

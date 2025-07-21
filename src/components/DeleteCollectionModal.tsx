@@ -12,7 +12,7 @@ export default function DeleteCollectionModal(
 ) {
   const [inputValue, setInputValue] = createSignal("");
 
-  const isConfirmDisabled = () => inputValue().trim() !== props.collectionName;
+  const isConfirmDisabled = () => inputValue() !== props.collectionName;
 
   const handleConfirm = () => {
     if (!isConfirmDisabled()) {
@@ -34,7 +34,7 @@ export default function DeleteCollectionModal(
   return (
     <Show when={props.isOpen}>
       <div class="modal modal-open">
-        <div class="modal-box relative">
+        <div class="modal-box relative" role="dialog">
           <button
             class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
             onClick={handleCancel}
@@ -55,6 +55,7 @@ export default function DeleteCollectionModal(
           </label>
           <input
             type="text"
+            id="collectionName"
             name="collectionName"
             class="input input-bordered w-full mb-4"
             value={inputValue()}
@@ -70,7 +71,7 @@ export default function DeleteCollectionModal(
               disabled={isConfirmDisabled()}
               onClick={handleConfirm}
             >
-              Delete Collection
+              Confirm Delete
             </button>
           </div>
         </div>
