@@ -2,13 +2,18 @@
   "manifest_version": 3,
   "name": "Better Bookmarks",
   "version": "1.0.0",
-  "description": "A minimal Firefox web extension using Manifest V3",
+  "description": "A bookmark manager to organize and manage your bookmarks. Easily create and delete bookmarks.",
 
   "action": {
     "default_icon": "./assets/bookmark-icon.svg",
     "default_popup": "/index.html",
-    "default_title": "Bookmarks"
+    "default_title": "Better Bookmarks"
   },
 
-  "permissions": ["activeTab", "storage", "tabs"]
+  "permissions": ["activeTab", "storage", "tabs"],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "artmisdev@betterbookmarks.com"
+    }
+  }
 }
