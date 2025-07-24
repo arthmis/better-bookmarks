@@ -756,7 +756,7 @@ describe("App Component", () => {
           // Should not add the duplicate bookmark - storage.set should not be called again
           // since we're preventing duplicates based on URL
           await waitFor(() => {
-            expect(globalThis.browser.storage.local.set).toHaveBeenCalled();
+            expect(globalThis.browser.storage.local.set).not.toHaveBeenCalled();
           });
 
           await waitFor(() => {
@@ -809,6 +809,10 @@ describe("App Component", () => {
 
           await waitFor(() => {
             expect(globalThis.browser.tabs.query).toHaveBeenCalled();
+          });
+
+          await waitFor(() => {
+            expect(globalThis.browser.storage.local.set).not.toHaveBeenCalled();
           });
 
           await waitFor(() => {

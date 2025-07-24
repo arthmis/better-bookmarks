@@ -174,27 +174,65 @@ export default function App() {
       return;
     }
 
-    const bookmarks: CollectionBookmark[] = tabs.map((tab) => {
-      // Create a better title by getting the page title
-      let title = tab.title || "";
-      let url = tab.url || "";
-      let iconUrl = tab.favIconUrl || undefined;
+    // Get the selected collection to check for duplicate URLs
+    const selectedCollection = findCollectionById(collections(), selectedId);
+    if (!selectedCollection) {
+      showErrorToast("Selected collection not found");
+      return;
+    }
 
-      return {
-        id: crypto.randomUUID(),
-        title,
-        url,
-        iconUrl,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-    });
+    // Helper function to normalize URLs for comparison
+    const normalizeUrl = (url: string): string => {
+      try {
+        const urlObj = new URL(url);
+        // Remove trailing slash and convert to lowercase for comparison
+        // TODO: see if there is a better way to normalize URLs than regex
+        return urlObj.href.replace(/\/$/, "").toLowerCase();
+      } catch {
+        // If URL parsing fails, return original URL for comparison
+        return url.toLowerCase();
+      }
+    };
+
+    // Get existing URLs in the selected collection
+    const existingUrls = new Set(
+      selectedCollection.items.map((item) => normalizeUrl(item.url)),
+    );
+
+    const bookmarks: CollectionBookmark[] = tabs
+      .filter((tab) => {
+        const tabUrl = tab.url || "";
+        if (!tabUrl) return false;
+
+        // Check if this URL already exists in the collection
+        const normalizedTabUrl = normalizeUrl(tabUrl);
+        return !existingUrls.has(normalizedTabUrl);
+      })
+      .map((tab) => {
+        // Create a better title by getting the page title
+        let title = tab.title || "";
+        let url = tab.url || "";
+        let iconUrl = tab.favIconUrl || undefined;
+
+        return {
+          id: crypto.randomUUID(),
+          title,
+          url,
+          iconUrl,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      });
+
+    // If no bookmarks to add (all were duplicates), don't update storage
+    if (bookmarks.length === 0) {
+      return;
+    }
 
     // Find and update the selected collection
     const updateCollections = (collections: Collection[]): Collection[] => {
       return collections.map((collection) => {
         if (collection.id === selectedId) {
-          // const filteredBookmarks = bookmarks.filter((bookmark) => !collection.items.some((item) => item.id === bookmark.id));
           const newCollection = {
             ...collection,
             items: [...collection.items, ...bookmarks],
