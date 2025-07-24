@@ -67,6 +67,34 @@ export default function App() {
   };
 
   const addNewCollection = async (name: string) => {
+    const normalizedName = name.trim().toLowerCase();
+
+    // Check for duplicates
+    const isDuplicate = (collectionsToCheck: Collection[]): boolean => {
+      return collectionsToCheck.some(
+        (collection) => collection.name.trim().toLowerCase() === normalizedName,
+      );
+    };
+
+    if (selectedCollectionId() === undefined) {
+      // Check top-level collections for duplicates
+      if (isDuplicate(collections())) {
+        return; // Don't add duplicate
+      }
+    } else {
+      // Check subcollections of selected collection for duplicates
+      const selectedCollection = findCollectionById(
+        collections(),
+        selectedCollectionId()!,
+      );
+      if (
+        selectedCollection &&
+        isDuplicate(selectedCollection.subcollections)
+      ) {
+        return; // Don't add duplicate
+      }
+    }
+
     const newCollection: Collection = {
       id: generateId(),
       name: name,
@@ -80,7 +108,6 @@ export default function App() {
       try {
         await updateAndStoreCollections([...collections(), newCollection]);
       } catch (error) {
-        console.error("Failed to add or update collection:", error);
         showErrorToast("Failed to add or update collection. Please try again.");
       } finally {
         return;

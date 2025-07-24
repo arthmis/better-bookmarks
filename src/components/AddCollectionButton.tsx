@@ -1,5 +1,3 @@
-import { Collection } from "./Collections";
-
 interface AddCollectionButtonProps {
   onAddCollection: (name: string) => void;
 }

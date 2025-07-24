@@ -424,6 +424,128 @@ describe("App Component", () => {
         });
       });
 
+      it("should not add duplicate collection when name already exists at top level", async () => {
+        const mockPrompt = vi.fn().mockReturnValue("Work");
+        globalThis.window.prompt = mockPrompt;
+
+        render(() => <App />);
+
+        await waitFor(() => {
+          expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+        });
+
+        // Verify "Work" collection already exists in the mock data
+        expect(screen.getByText("Work")).toBeInTheDocument();
+
+        const addButton = await screen.findByRole("button", {
+          name: /add collection/i,
+        });
+        fireEvent.click(addButton);
+
+        // Should not create a duplicate - storage.set should not be called for new collection
+        expect(globalThis.browser.storage.local.set).not.toHaveBeenCalled();
+      });
+
+      it("should not add duplicate collection when name already exists in selected collection", async () => {
+        const mockPrompt = vi.fn().mockReturnValue("Projects");
+        globalThis.window.prompt = mockPrompt;
+
+        render(() => <App />);
+
+        await waitFor(() => {
+          expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+        });
+
+        // First select the "Work" collection to expand it
+        const workCollection = screen.getByText("Work");
+        fireEvent.click(workCollection);
+
+        await waitFor(() => {
+          // Verify "Projects" is visible as a subcollection under Work
+          expect(screen.getByText("Projects")).toBeInTheDocument();
+        });
+
+        const addButton = await screen.findByRole("button", {
+          name: /add collection/i,
+        });
+        fireEvent.click(addButton);
+
+        // Should not create a duplicate subcollection - storage.set should not be called for new collection
+        expect(globalThis.browser.storage.local.set).not.toHaveBeenCalled();
+      });
+
+      it("should not add duplicate collection with different case", async () => {
+        const mockPrompt = vi.fn().mockReturnValue("work");
+        globalThis.window.prompt = mockPrompt;
+
+        render(() => <App />);
+
+        await waitFor(() => {
+          expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+        });
+
+        // Verify "Work" collection already exists in the mock data (case sensitive)
+        expect(screen.getByText("Work")).toBeInTheDocument();
+
+        const addButton = await screen.findByRole("button", {
+          name: /add collection/i,
+        });
+        fireEvent.click(addButton);
+
+        // Should not create a duplicate with different case - storage.set should not be called for new collection
+        expect(globalThis.browser.storage.local.set).not.toHaveBeenCalled();
+      });
+
+      it("should not add duplicate collection with extra whitespace", async () => {
+        const mockPrompt = vi.fn().mockReturnValue("  Work  ");
+        globalThis.window.prompt = mockPrompt;
+
+        render(() => <App />);
+
+        await waitFor(() => {
+          expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+        });
+
+        // Verify "Work" collection already exists in the mock data
+        expect(screen.getByText("Work")).toBeInTheDocument();
+
+        const addButton = await screen.findByRole("button", {
+          name: /add collection/i,
+        });
+        fireEvent.click(addButton);
+
+        // Should not create a duplicate with whitespace - storage.set should not be called for new collection
+        expect(globalThis.browser.storage.local.set).not.toHaveBeenCalled();
+      });
+
+      it("should not add duplicate subcollection with different case and whitespace", async () => {
+        const mockPrompt = vi.fn().mockReturnValue("  PROJECTS  ");
+        globalThis.window.prompt = mockPrompt;
+
+        render(() => <App />);
+
+        await waitFor(() => {
+          expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+        });
+
+        // First select the "Work" collection to expand it
+        const workCollection = screen.getByText("Work");
+        fireEvent.click(workCollection);
+
+        await waitFor(() => {
+          // Verify "Projects" is visible as a subcollection under Work
+          expect(screen.getByText("Projects")).toBeInTheDocument();
+        });
+
+        const addButton = await screen.findByRole("button", {
+          name: /add collection/i,
+        });
+        fireEvent.click(addButton);
+
+        // Should not create a duplicate subcollection with different case and whitespace
+        expect(globalThis.browser.storage.local.set).not.toHaveBeenCalled();
+      });
+
       describe("Tab Import Functionality", () => {
         beforeEach(() => {
           // Set up a more detailed mock tab for import testing
