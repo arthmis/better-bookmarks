@@ -703,6 +703,124 @@ describe("App Component", () => {
           expect(screen.getByText("stackoverflow.com")).toBeInTheDocument();
         });
 
+        it("should not import duplicate bookmark with same URL", async () => {
+          // Mock a tab with URL that already exists in the Work collection
+          globalThis.browser.tabs.query = vi.fn().mockResolvedValue([
+            {
+              id: 1,
+              url: "https://work.example.com",
+              title: "Another Work Item",
+              active: true,
+              highlighted: true,
+            },
+          ]);
+
+          render(() => <App />);
+
+          await waitFor(() => {
+            expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+          });
+
+          // Select the "Work" collection which already has a bookmark with URL "https://work.example.com"
+          const workCollection = await screen.findByText("Work");
+          fireEvent.click(workCollection);
+
+          // Verify existing bookmark is displayed
+          await waitFor(() => {
+            expect(screen.getByText("Example Work Item")).toBeInTheDocument();
+          });
+
+          // Count initial bookmarks
+          const initialWorkDomainElements =
+            screen.getAllByText("work.example.com");
+          const initialBookmarkCount = initialWorkDomainElements.length;
+          await waitFor(() => {
+            expect(screen.getByText("Example Work Item")).toBeInTheDocument();
+          });
+
+          const importButton = await screen.findByRole("button", {
+            name: /import tab/i,
+          });
+
+          await waitFor(() => {
+            expect(importButton).not.toBeDisabled();
+          });
+
+          // Try to import tab with duplicate URL
+          fireEvent.click(importButton);
+
+          await waitFor(() => {
+            expect(globalThis.browser.tabs.query).toHaveBeenCalled();
+          });
+
+          // Should not add the duplicate bookmark - storage.set should not be called again
+          // since we're preventing duplicates based on URL
+          await waitFor(() => {
+            expect(globalThis.browser.storage.local.set).toHaveBeenCalled();
+          });
+
+          await waitFor(() => {
+            expect(screen.getByText("Example Work Item")).toBeInTheDocument();
+          });
+
+          // Should not display the duplicate bookmark title
+          expect(
+            screen.queryByText("Another Work Item"),
+          ).not.toBeInTheDocument();
+        });
+
+        it("should not import duplicate bookmark with slightly different URL format", async () => {
+          // Mock a tab with URL that has different format but same resource (trailing slash)
+          globalThis.browser.tabs.query = vi.fn().mockResolvedValue([
+            {
+              id: 1,
+              url: "https://work.example.com/",
+              title: "Work Item with Trailing Slash",
+              active: true,
+              highlighted: true,
+            },
+          ]);
+
+          render(() => <App />);
+
+          await waitFor(() => {
+            expect(globalThis.browser.storage.local.get).toHaveBeenCalled();
+          });
+
+          // Select the "Work" collection which already has a bookmark with URL "https://work.example.com"
+          const workCollection = await screen.findByText("Work");
+          fireEvent.click(workCollection);
+
+          // Verify existing bookmark is displayed
+          await waitFor(() => {
+            expect(screen.getByText("Example Work Item")).toBeInTheDocument();
+          });
+
+          const importButton = await screen.findByRole("button", {
+            name: /import tab/i,
+          });
+
+          await waitFor(() => {
+            expect(importButton).not.toBeDisabled();
+          });
+
+          // Try to import tab with slightly different URL format (trailing slash)
+          fireEvent.click(importButton);
+
+          await waitFor(() => {
+            expect(globalThis.browser.tabs.query).toHaveBeenCalled();
+          });
+
+          await waitFor(() => {
+            expect(screen.getByText("Example Work Item")).toBeInTheDocument();
+          });
+
+          // Should not display the duplicate bookmark title
+          expect(
+            screen.queryByText("Work Item with Trailing Slash"),
+          ).not.toBeInTheDocument();
+        });
+
         it("should show error toast when tab import fails", async () => {
           // Mock tabs.query to fail
           globalThis.browser.tabs.query = vi

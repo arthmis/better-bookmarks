@@ -194,6 +194,7 @@ export default function App() {
     const updateCollections = (collections: Collection[]): Collection[] => {
       return collections.map((collection) => {
         if (collection.id === selectedId) {
+          // const filteredBookmarks = bookmarks.filter((bookmark) => !collection.items.some((item) => item.id === bookmark.id));
           const newCollection = {
             ...collection,
             items: [...collection.items, ...bookmarks],
@@ -320,9 +321,6 @@ export default function App() {
       }
     }
   };
-
-  // TODO: Address this unused variable
-  const isImportDisabled = () => !selectedCollectionId();
 
   return (
     // firefox web extension can only grow up to 800px wide by 600px high
