@@ -10,7 +10,7 @@
     "default_title": "Better Bookmarks"
   },
 
-  "permissions": ["activeTab", "storage", "tabs"],
+  "permissions": ["activeTab", "storage", "tabs", "bookmarks"],
   "browser_specific_settings": {
     "gecko": {
       "id": "artmisdev@betterbookmarks.com"

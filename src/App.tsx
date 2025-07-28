@@ -7,6 +7,7 @@ import CollectionBookmarksComponent, {
   CollectionBookmarks,
   CollectionBookmark,
 } from "./components/CollectionBookmarks";
+import BrowserBookmarks from "./components/BrowserBookmarks";
 
 interface CollectionFetchState {
   status: "pending" | "success" | "error";
@@ -32,6 +33,7 @@ export default function App() {
   const [collections, setCollections] = createSignal<Collection[]>([]);
   const [currentExpandedCollections, setCurrentExpandedCollections] =
     createSignal<string[]>([]);
+  const [browserBookmarksOpen, setBrowserBookmarksOpen] = createSignal(false);
 
   browser.storage.local
     .get("collections")
@@ -382,6 +384,13 @@ export default function App() {
                   selectedCollectionId={selectedCollectionId()}
                   onImportTab={importCurrentTab}
                 />
+                <button
+                  onClick={() => setBrowserBookmarksOpen(true)}
+                  class="btn btn-secondary"
+                >
+                  <span class="text-sm">🔖</span>
+                  View Browser Bookmarks
+                </button>
               </div>
               <CollectionBookmarksComponent
                 collection={collectionBookmarks()}
@@ -398,6 +407,9 @@ export default function App() {
         </Match>
       </Switch>
       <ErrorToast />
+      <Show when={browserBookmarksOpen()}>
+        <BrowserBookmarks onClose={() => setBrowserBookmarksOpen(false)} />
+      </Show>
     </div>
   );
 }
