@@ -3,13 +3,15 @@ import { Collection } from "./Collections";
 import { CollectionBookmark } from "./CollectionBookmarks";
 
 interface BrowserBookmarksProps {
-  // isOpen: boolean;
   onClose: () => void;
+  collections: Collection[];
+  onImportCollections: (browserCollections: Collection[]) => Promise<void>;
 }
 
 export default function BrowserBookmarks(props: BrowserBookmarksProps) {
+  const [importing, setImporting] = createSignal(false);
   // Fetch browser bookmarks
-  const fetchBrowserBookmarks = async (_source, _options) => {
+  const fetchBrowserBookmarks = async (_source: any, _options: any) => {
     try {
       const bookmarkTree = await browser.bookmarks.getTree();
       const rootNode = bookmarkTree[0];
@@ -182,6 +184,39 @@ export default function BrowserBookmarks(props: BrowserBookmarksProps) {
     );
   };
 
+  // Calculate total bookmarks available for import
+  const getTotalImportableBookmarks = () => {
+    const browserCollections = collections();
+    if (!browserCollections) return 0;
+
+    let total = 0;
+    const countBookmarks = (collection: Collection) => {
+      total += collection.items.length;
+      collection.subcollections.forEach(countBookmarks);
+    };
+
+    browserCollections.forEach(countBookmarks);
+    return total;
+  };
+
+  // Handle importing browser bookmarks
+  const handleImportBookmarks = async () => {
+    const browserCollections = collections();
+    if (!browserCollections || browserCollections.length === 0) {
+      return;
+    }
+
+    setImporting(true);
+    try {
+      await props.onImportCollections(browserCollections);
+    } catch (error) {
+      console.error("Failed to import bookmarks:", error);
+      // Error handling is done in the parent component
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <dialog class="modal modal-open w-full">
       <div class="bg-gray-50 rounded-box flex flex-col min-h-9/10 max-h-9/10 w-9/10">
@@ -195,6 +230,21 @@ export default function BrowserBookmarks(props: BrowserBookmarksProps) {
           >
             ✕
           </button>
+        </div>
+
+        {/* Info Section */}
+        <div class="p-4 bg-blue-50 border-b border-gray-300">
+          <p class="text-sm text-gray-700">
+            Import your browser bookmarks into this app. Duplicate URLs will be
+            skipped automatically. Collections with matching names will be
+            merged together.
+          </p>
+          <Show when={collections()}>
+            <p class="text-sm text-blue-600 mt-2">
+              Found {getTotalImportableBookmarks()} bookmarks across{" "}
+              {collections()?.length || 0} collections.
+            </p>
+          </Show>
         </div>
 
         {/* Content */}
@@ -217,9 +267,21 @@ export default function BrowserBookmarks(props: BrowserBookmarksProps) {
         </div>
 
         {/* Footer */}
-        <div class="p-4 border-t border-gray-300 flex justify-end">
+        <div class="p-4 border-t border-gray-300 flex justify-between">
           <button onClick={props.onClose} class="btn btn-primary">
             Close
+          </button>
+          <button
+            onClick={handleImportBookmarks}
+            class="btn btn-primary"
+            disabled={
+              !collections() || collections()?.length === 0 || importing()
+            }
+          >
+            <Show when={importing()} fallback="Import Bookmarks">
+              <span class="loading loading-spinner loading-sm mr-2"></span>
+              Importing...
+            </Show>
           </button>
         </div>
       </div>
