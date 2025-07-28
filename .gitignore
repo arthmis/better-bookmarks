@@ -2,3 +2,5 @@ node_modules/
 dist/
 .DS_Store
 public/.DS_STORE
+web-ext-artifacts
+bookmarks-*.zip
