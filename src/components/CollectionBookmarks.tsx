@@ -1,4 +1,4 @@
-import { For } from "solid-js";
+import { For, Show } from "solid-js";
 
 export interface CollectionBookmarks {
   title: string;
@@ -29,18 +29,34 @@ export default function CollectionBookmarksComponent(
         <ul class="list bg-base-100">
           <For
             each={props.collection.bookmarks}
-            fallback={<div>No bookmarks found.</div>}
+            fallback={
+              <div class="p-4">
+                Select a collection, some tabs and add add the tabs to the
+                collection!
+              </div>
+            }
           >
             {(bookmark) => {
               const baseUrl = new URL(bookmark.url);
               return (
                 <li class="list-row">
-                  <div>
-                    <img
-                      class="size-10 rounded-box"
-                      src={bookmark.iconUrl}
-                      alt={bookmark.title}
-                    />
+                  <div class="flex items-center">
+                    <Show
+                      when={bookmark.iconUrl}
+                      fallback={
+                        <img
+                          class="size-6 rounded-box"
+                          src="/assets/bookmark-icon.svg"
+                          alt=""
+                        />
+                      }
+                    >
+                      <img
+                        class="size-10 rounded-box"
+                        src={bookmark.iconUrl}
+                        alt=""
+                      />
+                    </Show>
                   </div>
                   <div class="flex flex-col">
                     <a class="link link-info link-hover" href={bookmark.url}>

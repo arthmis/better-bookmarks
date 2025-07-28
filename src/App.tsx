@@ -482,13 +482,26 @@ export default function App() {
                   selectedCollectionId={selectedCollectionId()}
                   onImportTab={importCurrentTab}
                 />
-                <button
-                  onClick={() => setBrowserBookmarksOpen(true)}
-                  class="btn btn-secondary"
-                >
-                  <span class="text-sm">🔖</span>
-                  View Browser Bookmarks
-                </button>
+                <div class="dropdown dropdown-bottom dropdown-end">
+                  <button tabIndex={0} class="btn btn-ghost m-1">
+                    <img
+                      src="/assets/horizontal-dots.svg"
+                      alt="Extra Options"
+                    />
+                  </button>
+                  <div
+                    tabIndex={0}
+                    class="dropdown-content card card-sm bg-base-100 z-1 w-64 shadow-md"
+                  >
+                    <button
+                      onClick={() => setBrowserBookmarksOpen(true)}
+                      class="btn btn-secondary"
+                    >
+                      <span class="text-sm">🔖</span>
+                      Import Browser Bookmarks
+                    </button>
+                  </div>
+                </div>
               </div>
               <CollectionBookmarksComponent
                 collection={collectionBookmarks()}
