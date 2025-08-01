@@ -15,6 +15,11 @@ interface CollectionFetchState {
   error?: Error;
 }
 
+interface Favorite {
+  id: string;
+  name: string;
+}
+
 export default function App() {
   const [selectedCollectionId, setSelectedCollectionId] = createSignal<
     string | undefined
@@ -34,11 +39,16 @@ export default function App() {
   const [currentExpandedCollections, setCurrentExpandedCollections] =
     createSignal<string[]>([]);
   const [browserBookmarksOpen, setBrowserBookmarksOpen] = createSignal(false);
+  const [mostRecentlyUpdatedCollections, setMostRecentlyUpdatedCollections] =
+    createSignal<Favorite[]>([]);
 
   browser.storage.local
-    .get("collections")
+    .get(["collections", "mostRecentlyUpdatedCollections"])
     .then((data) => {
       setCollections(data.collections || []);
+      setMostRecentlyUpdatedCollections(
+        data.mostRecentlyUpdatedCollections || [],
+      );
       setFetchDataState({ status: "success" });
     })
     .catch(() => {
@@ -237,6 +247,23 @@ export default function App() {
     }
   };
 
+  const updateMostRecentlyUpdatedCollections = (collection: Favorite) => {
+    const current = mostRecentlyUpdatedCollections();
+    const filtered = current.filter(({ id }) => id !== collection.id);
+    const updated = [collection, ...filtered].slice(0, 15);
+
+    setMostRecentlyUpdatedCollections(updated);
+
+    // Persist to storage
+    browser.storage.local
+      .set({
+        mostRecentlyUpdatedCollections: updated,
+      })
+      .catch((err) => {
+        console.log(`error storing favorites: ${err}`);
+      });
+  };
+
   const updateAndStoreCollections = async (
     collections: Collection[],
   ): Promise<void> => {
@@ -341,6 +368,12 @@ export default function App() {
           setBookmarkItems({
             title: newCollection.name,
             bookmarks: newCollection.items,
+          });
+
+          // Update most recently updated collections
+          updateMostRecentlyUpdatedCollections({
+            id: selectedId,
+            name: collection.name,
           });
 
           return newCollection;
