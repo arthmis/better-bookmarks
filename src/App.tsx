@@ -634,25 +634,17 @@ export default function App() {
       <Switch fallback={<div>Getting bookmarks</div>}>
         <Match when={fetchDataState().status === "success"}>
           <div class="flex w-full h-full">
-            <div class="flex flex-col">
-              {/* Tab Navigation for Sidebar */}
-              <div class="tabs tabs-bordered mb-4">
-                <button
-                  class={`tab tab-bordered ${activeTab() === "collections" ? "tab-active" : ""}`}
-                  onClick={() => setActiveTab("collections")}
-                >
-                  Collections
-                </button>
-                <button
-                  class={`tab tab-bordered ${activeTab() === "favorites" ? "tab-active" : ""}`}
-                  onClick={() => setActiveTab("favorites")}
-                >
-                  Favorites
-                </button>
-              </div>
-
+            <div class="tabs tabs-lift flex w-[300px]">
               {/* Sidebar Content */}
-              <Show when={activeTab() === "collections"}>
+              {/* Tab Navigation for Sidebar */}
+              <input
+                type="radio"
+                class="tab"
+                aria-label="Collections"
+                checked={activeTab() === "collections"}
+                onClick={() => setActiveTab("collections")}
+              />
+              <div class="tab-content bg-base-100 border-base-300">
                 <Collections
                   collections={collections()}
                   selectedCollectionId={selectedCollectionId()}
@@ -662,16 +654,25 @@ export default function App() {
                   setCurrentExpandedCollections={setCurrentExpandedCollections}
                   currentExpandedCollections={currentExpandedCollections()}
                 />
-              </Show>
-              <Show when={activeTab() === "favorites"}>
+              </div>
+
+              <input
+                type="radio"
+                class="tab"
+                aria-label="Favorites"
+                checked={activeTab() === "favorites"}
+                onClick={() => setActiveTab("favorites")}
+              />
+              <div class="tab-content bg-base-100 border-base-300">
                 <Favorites
                   favorites={mostRecentlyUpdatedCollections()}
                   selectedFavoriteId={selectedFavoriteId()}
                   onSelectFavorite={handleSelectFavorite}
                 />
-              </Show>
+              </div>
             </div>
 
+            {/* Right panel that shows bookmarks and buttons */}
             <div class="flex flex-col flex-1 p-5 w-full h-full">
               <div class="flex flex-row mb-5 justify-evenly items-center">
                 <AddCollectionButton onAddCollection={addNewCollection} />
