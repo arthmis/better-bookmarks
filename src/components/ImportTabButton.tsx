@@ -2,15 +2,28 @@ import { Collection } from "./Collections";
 
 interface ImportTabButtonProps {
   selectedCollectionId?: string;
+  selectedFavoriteId?: string;
   onImportTab: () => Promise<void>;
+  onImportTabToFavorite: () => Promise<void>;
+  activeTab: "collections" | "favorites";
 }
 
 export default function ImportTabButton(props: ImportTabButtonProps) {
-  const isDisabled = () => !props.selectedCollectionId;
+  const isDisabled = () => {
+    if (props.activeTab === "collections") {
+      return !props.selectedCollectionId;
+    } else {
+      return !props.selectedFavoriteId;
+    }
+  };
 
   const handleImportTab = async () => {
     if (!isDisabled()) {
-      await props.onImportTab();
+      if (props.activeTab === "collections") {
+        await props.onImportTab();
+      } else {
+        await props.onImportTabToFavorite();
+      }
     }
   };
 

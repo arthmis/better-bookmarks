@@ -8,6 +8,7 @@ import CollectionBookmarksComponent, {
   CollectionBookmark,
 } from "./components/CollectionBookmarks";
 import BrowserBookmarks from "./components/BrowserBookmarks";
+import Favorites from "./components/Favorites";
 
 interface CollectionFetchState {
   status: "pending" | "success" | "error";
@@ -44,6 +45,9 @@ export default function App() {
   const [activeTab, setActiveTab] = createSignal<"collections" | "favorites">(
     "favorites",
   );
+  const [selectedFavoriteId, setSelectedFavoriteId] = createSignal<
+    string | undefined
+  >();
 
   browser.storage.local
     .get(["collections", "mostRecentlyUpdatedCollections"])
@@ -396,6 +400,132 @@ export default function App() {
     }
   };
 
+  // TODO: see if this function is redundant with the above function, importCurrentTab
+  const importTabToFavorite = async () => {
+    const selectedId = selectedFavoriteId();
+    if (!selectedId) {
+      showErrorToast("Please select a favorite collection first");
+      return;
+    }
+
+    let tabs: browser.tabs.Tab[] | undefined = undefined;
+    try {
+      tabs = await getSelectedTabs();
+    } catch (error) {
+      showErrorToast("Failed to save selected tab(s).");
+      return;
+    }
+
+    if (!tabs) {
+      return;
+    }
+
+    // Get the selected collection to check for duplicate URLs
+    const selectedCollection = findCollectionById(collections(), selectedId);
+    if (!selectedCollection) {
+      showErrorToast("Selected collection not found");
+      return;
+    }
+
+    // Helper function to normalize URLs for comparison
+    const normalizeUrl = (url: string): string => {
+      try {
+        const urlObj = new URL(url);
+        // Remove trailing slash and convert to lowercase for comparison
+        return urlObj.href.replace(/\/$/, "").toLowerCase();
+      } catch {
+        // If URL parsing fails, return original URL for comparison
+        return url.toLowerCase();
+      }
+    };
+
+    // Get existing URLs in the selected collection
+    const existingUrls = new Set(
+      selectedCollection.items.map((item) => normalizeUrl(item.url)),
+    );
+
+    const bookmarks: CollectionBookmark[] = tabs
+      .filter((tab) => {
+        const tabUrl = tab.url || "";
+        if (!tabUrl) return false;
+
+        // Check if this URL already exists in the collection
+        const normalizedTabUrl = normalizeUrl(tabUrl);
+        return !existingUrls.has(normalizedTabUrl);
+      })
+      .map((tab) => {
+        // Create a better title by getting the page title
+        let title = tab.title || "";
+        let url = tab.url || "";
+        let iconUrl = tab.favIconUrl || undefined;
+
+        return {
+          id: crypto.randomUUID(),
+          title,
+          url,
+          iconUrl,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      });
+
+    // If no bookmarks to add (all were duplicates), don't update storage
+    if (bookmarks.length === 0) {
+      return;
+    }
+
+    // Find and update the selected collection
+    const updateCollections = (collections: Collection[]): Collection[] => {
+      return collections.map((collection) => {
+        if (collection.id === selectedId) {
+          const newCollection = {
+            ...collection,
+            items: [...collection.items, ...bookmarks],
+          };
+          // if these items are in view update the list of bookmarks
+          setBookmarkItems({
+            title: newCollection.name,
+            bookmarks: newCollection.items,
+          });
+
+          // Update most recently updated collections
+          updateMostRecentlyUpdatedCollections({
+            id: selectedId,
+            name: collection.name,
+          });
+
+          return newCollection;
+        }
+        return {
+          ...collection,
+          subcollections: updateCollections(collection.subcollections),
+        };
+      });
+    };
+
+    try {
+      await updateAndStoreCollections(updateCollections(collections()));
+    } catch (error) {
+      console.error("Failed to add bookmark to collection:", error);
+      showErrorToast("Failed to add bookmark to collection. Please try again.");
+    }
+  };
+
+  const handleSelectFavorite = (favoriteId: string) => {
+    setSelectedFavoriteId(favoriteId);
+    // Clear collection selection when selecting favorite
+    setSelectedCollectionId(undefined);
+
+    // Find and display the favorite collection's bookmarks
+    const selectedCollection = findCollectionById(collections(), favoriteId);
+    if (selectedCollection) {
+      setBookmarkItems({
+        title: selectedCollection.name,
+        bookmarks: selectedCollection.items,
+      });
+    }
+  };
+
   const handleDeleteCollection = async (collectionId: string) => {
     const removeCollection = (collections: Collection[]): Collection[] =>
       collections
@@ -477,6 +607,8 @@ export default function App() {
       );
     } else {
       setSelectedCollectionId(collection.id);
+      // Clear favorite selection when selecting collection
+      setSelectedFavoriteId(undefined);
       const selectedCollection = findCollectionById(
         collections(),
         selectedCollectionId()!,
@@ -532,9 +664,11 @@ export default function App() {
                 />
               </Show>
               <Show when={activeTab() === "favorites"}>
-                <div class="p-4 text-center text-gray-500">
-                  Favorites sidebar - Coming soon
-                </div>
+                <Favorites
+                  favorites={mostRecentlyUpdatedCollections()}
+                  selectedFavoriteId={selectedFavoriteId()}
+                  onSelectFavorite={handleSelectFavorite}
+                />
               </Show>
             </div>
 
@@ -543,7 +677,10 @@ export default function App() {
                 <AddCollectionButton onAddCollection={addNewCollection} />
                 <ImportTabButton
                   selectedCollectionId={selectedCollectionId()}
+                  selectedFavoriteId={selectedFavoriteId()}
                   onImportTab={importCurrentTab}
+                  onImportTabToFavorite={importTabToFavorite}
+                  activeTab={activeTab()}
                 />
                 <div class="dropdown dropdown-bottom dropdown-end">
                   <button tabIndex={0} class="btn btn-ghost m-1">
