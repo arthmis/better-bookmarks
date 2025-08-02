@@ -41,6 +41,9 @@ export default function App() {
   const [browserBookmarksOpen, setBrowserBookmarksOpen] = createSignal(false);
   const [mostRecentlyUpdatedCollections, setMostRecentlyUpdatedCollections] =
     createSignal<Favorite[]>([]);
+  const [activeTab, setActiveTab] = createSignal<"collections" | "favorites">(
+    "favorites",
+  );
 
   browser.storage.local
     .get(["collections", "mostRecentlyUpdatedCollections"])
@@ -499,15 +502,42 @@ export default function App() {
       <Switch fallback={<div>Getting bookmarks</div>}>
         <Match when={fetchDataState().status === "success"}>
           <div class="flex w-full h-full">
-            <Collections
-              collections={collections()}
-              selectedCollectionId={selectedCollectionId()}
-              onSelectCollection={handleSelectCollection}
-              onDeleteCollection={handleDeleteCollection}
-              path={[]}
-              setCurrentExpandedCollections={setCurrentExpandedCollections}
-              currentExpandedCollections={currentExpandedCollections()}
-            />
+            <div class="flex flex-col">
+              {/* Tab Navigation for Sidebar */}
+              <div class="tabs tabs-bordered mb-4">
+                <button
+                  class={`tab tab-bordered ${activeTab() === "collections" ? "tab-active" : ""}`}
+                  onClick={() => setActiveTab("collections")}
+                >
+                  Collections
+                </button>
+                <button
+                  class={`tab tab-bordered ${activeTab() === "favorites" ? "tab-active" : ""}`}
+                  onClick={() => setActiveTab("favorites")}
+                >
+                  Favorites
+                </button>
+              </div>
+
+              {/* Sidebar Content */}
+              <Show when={activeTab() === "collections"}>
+                <Collections
+                  collections={collections()}
+                  selectedCollectionId={selectedCollectionId()}
+                  onSelectCollection={handleSelectCollection}
+                  onDeleteCollection={handleDeleteCollection}
+                  path={[]}
+                  setCurrentExpandedCollections={setCurrentExpandedCollections}
+                  currentExpandedCollections={currentExpandedCollections()}
+                />
+              </Show>
+              <Show when={activeTab() === "favorites"}>
+                <div class="p-4 text-center text-gray-500">
+                  Favorites sidebar - Coming soon
+                </div>
+              </Show>
+            </div>
+
             <div class="flex flex-col flex-1 p-5 w-full h-full">
               <div class="flex flex-row mb-5 justify-evenly items-center">
                 <AddCollectionButton onAddCollection={addNewCollection} />
@@ -536,6 +566,7 @@ export default function App() {
                   </div>
                 </div>
               </div>
+
               <CollectionBookmarksComponent
                 collection={collectionBookmarks()}
                 handleDeleteBookmark={handleDeleteBookmark}
