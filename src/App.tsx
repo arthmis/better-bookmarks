@@ -289,7 +289,10 @@ export default function App() {
   };
 
   const importCurrentTab = async () => {
-    const selectedId = selectedCollectionId();
+    const selectedId =
+      activeTab() === "collections"
+        ? selectedCollectionId()
+        : selectedFavoriteId();
     if (!selectedId) {
       // TODO: Implement logic to create a new collection if none is selected
       showErrorToast("Please select a collection first");
@@ -321,117 +324,6 @@ export default function App() {
         const urlObj = new URL(url);
         // Remove trailing slash and convert to lowercase for comparison
         // TODO: see if there is a better way to normalize URLs than regex
-        return urlObj.href.replace(/\/$/, "").toLowerCase();
-      } catch {
-        // If URL parsing fails, return original URL for comparison
-        return url.toLowerCase();
-      }
-    };
-
-    // Get existing URLs in the selected collection
-    const existingUrls = new Set(
-      selectedCollection.items.map((item) => normalizeUrl(item.url)),
-    );
-
-    const bookmarks: CollectionBookmark[] = tabs
-      .filter((tab) => {
-        const tabUrl = tab.url || "";
-        if (!tabUrl) return false;
-
-        // Check if this URL already exists in the collection
-        const normalizedTabUrl = normalizeUrl(tabUrl);
-        return !existingUrls.has(normalizedTabUrl);
-      })
-      .map((tab) => {
-        // Create a better title by getting the page title
-        let title = tab.title || "";
-        let url = tab.url || "";
-        let iconUrl = tab.favIconUrl || undefined;
-
-        return {
-          id: crypto.randomUUID(),
-          title,
-          url,
-          iconUrl,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-      });
-
-    // If no bookmarks to add (all were duplicates), don't update storage
-    if (bookmarks.length === 0) {
-      return;
-    }
-
-    // Find and update the selected collection
-    const updateCollections = (collections: Collection[]): Collection[] => {
-      return collections.map((collection) => {
-        if (collection.id === selectedId) {
-          const newCollection = {
-            ...collection,
-            items: [...collection.items, ...bookmarks],
-          };
-          // if these items are in view update the list of bookmarks
-          setBookmarkItems({
-            title: newCollection.name,
-            bookmarks: newCollection.items,
-          });
-
-          // Update most recently updated collections
-          updateMostRecentlyUpdatedCollections({
-            id: selectedId,
-            name: collection.name,
-          });
-
-          return newCollection;
-        }
-        return {
-          ...collection,
-          subcollections: updateCollections(collection.subcollections),
-        };
-      });
-    };
-
-    try {
-      await updateAndStoreCollections(updateCollections(collections()));
-    } catch (error) {
-      console.error("Failed to add bookmark to collection:", error);
-      showErrorToast("Failed to add bookmark to collection. Please try again.");
-    }
-  };
-
-  // TODO: see if this function is redundant with the above function, importCurrentTab
-  const importTabToFavorite = async () => {
-    const selectedId = selectedFavoriteId();
-    if (!selectedId) {
-      showErrorToast("Please select a favorite collection first");
-      return;
-    }
-
-    let tabs: browser.tabs.Tab[] | undefined = undefined;
-    try {
-      tabs = await getSelectedTabs();
-    } catch (error) {
-      showErrorToast("Failed to save selected tab(s).");
-      return;
-    }
-
-    if (!tabs) {
-      return;
-    }
-
-    // Get the selected collection to check for duplicate URLs
-    const selectedCollection = findCollectionById(collections(), selectedId);
-    if (!selectedCollection) {
-      showErrorToast("Selected collection not found");
-      return;
-    }
-
-    // Helper function to normalize URLs for comparison
-    const normalizeUrl = (url: string): string => {
-      try {
-        const urlObj = new URL(url);
-        // Remove trailing slash and convert to lowercase for comparison
         return urlObj.href.replace(/\/$/, "").toLowerCase();
       } catch {
         // If URL parsing fails, return original URL for comparison
@@ -680,7 +572,7 @@ export default function App() {
                   selectedCollectionId={selectedCollectionId()}
                   selectedFavoriteId={selectedFavoriteId()}
                   onImportTab={importCurrentTab}
-                  onImportTabToFavorite={importTabToFavorite}
+                  onImportTabToFavorite={importCurrentTab}
                   activeTab={activeTab()}
                 />
                 <div class="dropdown dropdown-bottom dropdown-end">
