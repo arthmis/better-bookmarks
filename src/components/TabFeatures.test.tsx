@@ -351,6 +351,66 @@ describe("Tab Features", () => {
     });
   });
 
+  describe("Cross-Tab Bookmark Visibility", () => {
+    it("should show new bookmark in Collections view when added to collection while in Favorites view", async () => {
+      render(() => <App />);
+
+      // Wait for data to load
+      await waitFor(() => {
+        expect(screen.getByText("Collections")).toBeInTheDocument();
+      });
+
+      // Switch to Favorites tab
+      const favoritesTab = screen.getByLabelText("Favorites");
+      fireEvent.click(favoritesTab);
+
+      await waitFor(() => {
+        expect(favoritesTab).toBeChecked();
+      });
+
+      // Click on "Work Projects" in the favorites list
+      const workProjectsFavorite = screen.getByText("Work Projects");
+      fireEvent.click(workProjectsFavorite);
+
+      await waitFor(() => {
+        // The collection's existing bookmarks should be displayed
+        expect(screen.getByText("Project Documentation")).toBeInTheDocument();
+      });
+
+      // Add a new bookmark to the selected collection while in Favorites view
+      const importButton = screen.getByText("Import Tab");
+      fireEvent.click(importButton);
+
+      await waitFor(() => {
+        // Verify the new bookmark appears in the current view
+        expect(screen.getByText("New Tab Content")).toBeInTheDocument();
+      });
+
+      // Switch back to Collections tab
+      const collectionsTab = screen.getByLabelText("Collections");
+      fireEvent.click(collectionsTab);
+
+      await waitFor(() => {
+        expect(collectionsTab).toBeChecked();
+      });
+
+      // Select the "Work Projects" collection in Collections view
+      // Use getAllByText and select the one in the collections list (not the header)
+      const workProjectsElements = screen.getAllByText("Work Projects");
+      const workProjectsCollection =
+        workProjectsElements.find(
+          (element) => element.closest(".tabs") && element.tagName === "SPAN",
+        ) || workProjectsElements[0];
+      fireEvent.click(workProjectsCollection);
+
+      await waitFor(() => {
+        // Verify both the original bookmark and the new bookmark are visible
+        expect(screen.getByText("Project Documentation")).toBeInTheDocument();
+        expect(screen.getByText("New Tab Content")).toBeInTheDocument();
+      });
+    });
+  });
+
   /**
    * Test Summary:
    *
@@ -368,6 +428,10 @@ describe("Tab Features", () => {
    * 4. ✅ Favorites Max Size Tests: Validates the 15-item limit for favorites, including:
    *    - Adding new collection (Collection 15) when favorites is at capacity
    *    - Removing Collection 0 and adding Collection 15 when favorites is at max capacity
+   *
+   * 5. ✅ Cross-Tab Bookmark Visibility Test: Ensures bookmarks added to collections while
+   *    in Favorites view are properly visible when switching to Collections view and
+   *    selecting the same collection.
    *
    * These tests provide comprehensive coverage of the tabbing feature requirements,
    * focusing on UI behavior and user experience rather than implementation details.
