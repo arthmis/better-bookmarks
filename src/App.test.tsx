@@ -1118,7 +1118,7 @@ describe("App Component", () => {
 
     describe("Collection Deletion", () => {
       it("should show delete button only when a collection is selected", async () => {
-        render(<App />);
+        render(() => <App />);
 
         // Wait for collections to load
         await waitFor(() => {
@@ -1142,7 +1142,7 @@ describe("App Component", () => {
       });
 
       it("should not show delete button when no collection is selected", async () => {
-        render(<App />);
+        render(() => <App />);
 
         // Wait for collections to load
         await waitFor(() => {
@@ -1156,7 +1156,7 @@ describe("App Component", () => {
       });
 
       it("should show confirmation modal when delete button is clicked", async () => {
-        render(<App />);
+        render(() => <App />);
 
         // Wait for collections to load
         await waitFor(() => {
@@ -1193,7 +1193,7 @@ describe("App Component", () => {
       });
 
       it("should disable delete confirmation button when collection name doesn't match", async () => {
-        render(<App />);
+        render(() => <App />);
 
         // Wait for collections to load
         await waitFor(() => {
@@ -1243,7 +1243,7 @@ describe("App Component", () => {
       });
 
       it("should cancel deletion when cancel button is clicked", async () => {
-        render(<App />);
+        render(() => <App />);
 
         // Wait for collections to load
         await waitFor(() => {
@@ -1276,7 +1276,7 @@ describe("App Component", () => {
       });
 
       it("should cancel deletion when X button is clicked", async () => {
-        render(<App />);
+        render(() => <App />);
 
         // Wait for collections to load
         await waitFor(() => {
@@ -1309,7 +1309,7 @@ describe("App Component", () => {
       });
 
       it("should delete collection and hide its children when correct name is entered and confirmed", async () => {
-        render(<App />);
+        render(() => <App />);
 
         // Wait for collections to load
         await waitFor(() => {
@@ -1367,7 +1367,7 @@ describe("App Component", () => {
       });
 
       it("should keep ancestor collections expanded when deleting a subcollection", async () => {
-        render(<App />);
+        render(() => <App />);
 
         // Wait for collections to load
         await waitFor(() => {
