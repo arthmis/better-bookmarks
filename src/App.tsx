@@ -25,6 +25,13 @@ export default function App() {
   const [selectedCollectionId, setSelectedCollectionId] = createSignal<
     string | undefined
   >();
+  const [selectedFavoriteId, setSelectedFavoriteId] = createSignal<
+    string | undefined
+  >();
+  const [activeTab, setActiveTab] = createSignal<"collections" | "favorites">(
+    "collections",
+  );
+
   const [collectionBookmarks, setBookmarkItems] =
     createSignal<CollectionBookmarks>({
       title: "",
@@ -42,12 +49,6 @@ export default function App() {
   const [browserBookmarksOpen, setBrowserBookmarksOpen] = createSignal(false);
   const [mostRecentlyUpdatedCollections, setMostRecentlyUpdatedCollections] =
     createSignal<Favorite[]>([]);
-  const [activeTab, setActiveTab] = createSignal<"collections" | "favorites">(
-    "favorites",
-  );
-  const [selectedFavoriteId, setSelectedFavoriteId] = createSignal<
-    string | undefined
-  >();
 
   browser.storage.local
     .get(["collections", "mostRecentlyUpdatedCollections"])
@@ -536,17 +537,21 @@ export default function App() {
                 checked={activeTab() === "collections"}
                 onClick={() => setActiveTab("collections")}
               />
-              <div class="tab-content bg-base-100 border-base-300">
-                <Collections
-                  collections={collections()}
-                  selectedCollectionId={selectedCollectionId()}
-                  onSelectCollection={handleSelectCollection}
-                  onDeleteCollection={handleDeleteCollection}
-                  path={[]}
-                  setCurrentExpandedCollections={setCurrentExpandedCollections}
-                  currentExpandedCollections={currentExpandedCollections()}
-                />
-              </div>
+              <Show when={activeTab() === "collections"}>
+                <div class="tab-content bg-base-100 border-base-300">
+                  <Collections
+                    collections={collections()}
+                    selectedCollectionId={selectedCollectionId()}
+                    onSelectCollection={handleSelectCollection}
+                    onDeleteCollection={handleDeleteCollection}
+                    path={[]}
+                    setCurrentExpandedCollections={
+                      setCurrentExpandedCollections
+                    }
+                    currentExpandedCollections={currentExpandedCollections()}
+                  />
+                </div>
+              </Show>
 
               <input
                 type="radio"
@@ -555,13 +560,15 @@ export default function App() {
                 checked={activeTab() === "favorites"}
                 onClick={() => setActiveTab("favorites")}
               />
-              <div class="tab-content bg-base-100 border-base-300">
-                <Favorites
-                  favorites={mostRecentlyUpdatedCollections()}
-                  selectedFavoriteId={selectedFavoriteId()}
-                  onSelectFavorite={handleSelectFavorite}
-                />
-              </div>
+              <Show when={activeTab() === "favorites"}>
+                <div class="tab-content bg-base-100 border-base-300">
+                  <Favorites
+                    favorites={mostRecentlyUpdatedCollections()}
+                    selectedFavoriteId={selectedFavoriteId()}
+                    onSelectFavorite={handleSelectFavorite}
+                  />
+                </div>
+              </Show>
             </div>
 
             {/* Right panel that shows bookmarks and buttons */}

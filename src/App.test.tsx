@@ -143,9 +143,10 @@ describe("App Component", () => {
 
     // Wait for storage to be called and data to load
     await waitFor(() => {
-      expect(globalThis.browser.storage.local.get).toHaveBeenCalledWith(
+      expect(globalThis.browser.storage.local.get).toHaveBeenCalledWith([
         "collections",
-      );
+        "mostRecentlyUpdatedCollections",
+      ]);
     });
 
     // Wait for collections to load and check if mocked collection names appear
