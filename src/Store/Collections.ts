@@ -11,6 +11,7 @@ import type { BackupCollection, Collection } from "../components/StateStore";
 import { generateId } from "../utils";
 import { Favorite } from "../components/Favorites";
 import { Effect } from "./Effects";
+import { AppEvent } from "./Events";
 
 export interface CollectionFetchState {
   status: "pending" | "success" | "error";
@@ -60,17 +61,106 @@ export function createStateStore() {
 }
 const { bookmarksStore, setBookmarksStore } = createStateStore();
 
-function handleEvent(
-  event: Event,
+export function handleEvent(
+  event: AppEvent,
   storeInstance?: ReturnType<typeof createStateStore>,
 ): Effect | undefined {
+  const { bookmarksStore: store, setBookmarksStore: setStore } =
+    storeInstance ?? { bookmarksStore, setBookmarksStore };
+
+  switch (event.type) {
+    case "INSERT_COLLECTION": {
+      const { name, collectionId, createdAt, updatedAt } = event.payload;
+      const normalizedName = name.trim().toLowerCase();
+
+      // Check for duplicates
+      const isDuplicate = (collectionsToCheck: Collection[]): boolean => {
+        return collectionsToCheck.some(
+          (collection) =>
+            collection.name.trim().toLowerCase() === normalizedName,
+        );
+      };
+
+      if (store.selectedCollectionId === undefined) {
+        // Check top-level collections for duplicates
+        if (isDuplicate(store.collections)) {
+          return; // Don't add duplicate
+        }
+      } else {
+        // Check subcollections of selected collection for duplicates
+        const selectedCollection = findCollectionById(
+          store.collections,
+          store.selectedCollectionId,
+        );
+        if (
+          selectedCollection &&
+          isDuplicate(selectedCollection.subcollections)
+        ) {
+          return; // Don't add duplicate
+        }
+      }
+
+      const newCollection: Collection = {
+        id: collectionId,
+        name: name,
+        items: [],
+        subcollections: [],
+        createdAt,
+        updatedAt,
+      };
+
+      if (store.selectedCollectionId === undefined) {
+        setStore("collections", [...store.collections, newCollection]);
+        return {
+          type: "SET_COLLECTIONS",
+          payload: [...store.collections, newCollection],
+        };
+      }
+
+      const insertCollection = (
+        collections: Collection[],
+        newCollection: Collection,
+      ): Collection[] => {
+        return collections.map((collection) => {
+          if (collection.id === store.selectedCollectionId) {
+            return {
+              ...collection,
+              subcollections: [...collection.subcollections, newCollection],
+            };
+          }
+          return {
+            ...collection,
+            subcollections: insertCollection(
+              collection.subcollections,
+              newCollection,
+            ),
+          };
+        });
+      };
+
+      try {
+        const updatedCollection = insertCollection(
+          store.collections,
+          newCollection,
+        );
+        setStore("collections", updatedCollection);
+        return {
+          type: "SET_COLLECTIONS",
+          payload: updatedCollection,
+        };
+      } catch (error) {
+        console.error("Failed to add or update collection:", error);
+        // showErrorToast("Failed to add or update collection. Please try again.");
+      }
+    }
+  }
   return undefined;
 }
 
-function handleEffect(
+async function handleEffect(
   effect: Effect,
   storeInstance?: ReturnType<typeof createStateStore>,
-): void {
+): Promise<void> {
   const store = storeInstance ?? bookmarksStore;
   switch (effect.type) {
     case "SET_CURRENT_EXPANDED_COLLECTIONS":
@@ -85,11 +175,21 @@ function handleEffect(
         selectedCollectionId: effect.payload,
       });
       break;
+    case "SET_COLLECTIONS": {
+      const { payload: collections } = effect;
+      try {
+        await browser.storage.local.set({ collections });
+      } catch (error) {
+        // todo send the error to state
+        console.error("Failed to set collections:", error);
+      }
+      break;
+    }
   }
 }
 
 export function dispatch(
-  event: Event,
+  event: AppEvent,
   storeInstance?: ReturnType<typeof createStateStore>,
 ) {
   const effect = handleEvent(event, storeInstance);
