@@ -1,8 +1,14 @@
 import { createSignal, Match, onMount, Show, Switch } from "solid-js";
 import type { BackgroundScriptResponse } from "./background_script_types";
+import {
+  findCollectionById,
+  mapBackupDatesToJavascriptDate,
+  mergeCollections,
+  normalizeUrl,
+} from "./Collections";
 import AddCollectionButton from "./components/AddCollectionButton";
 import BackupBookmarks, {
-  BackupData,
+  type BackupData,
   type ParsedBackupData,
 } from "./components/BackupBookmarks";
 import BrowserBookmarks from "./components/BrowserBookmarks";
@@ -14,10 +20,7 @@ import Collections, { type Collection } from "./components/Collections";
 import ErrorToast, { showErrorToast } from "./components/ErrorToast";
 import Favorites from "./components/Favorites";
 import ImportTabButton from "./components/ImportTabButton";
-import {
-  findCollectionById,
-  mapBackupDatesToJavascriptDate,
-} from "./Collections";
+import { generateId } from "./utils";
 
 interface CollectionFetchState {
   status: "pending" | "success" | "error";
@@ -94,107 +97,7 @@ export default function App() {
       });
     });
 
-  const generateId = () => {
-    return crypto.randomUUID();
-  };
-
-  // Helper function to normalize URLs for comparison
-  const normalizeUrl = (url: string): string => {
-    try {
-      const urlObj = new URL(url);
-      // Remove trailing slash and convert to lowercase for comparison
-      return urlObj.href.replace(/\/$/, "").toLowerCase();
-    } catch {
-      // If URL parsing fails, return original URL for comparison
-      return url.toLowerCase();
-    }
-  };
-
   // Function to merge browser bookmarks with existing collections
-  const mergeBrowserBookmarks = (
-    existingCollections: Collection[],
-    browserCollections: Collection[],
-  ): Collection[] => {
-    // Get all existing URLs from all collections to avoid duplicates
-    const getAllExistingUrls = (collections: Collection[]): Set<string> => {
-      const urls = new Set<string>();
-      const addUrlsFromCollection = (collection: Collection) => {
-        collection.items.forEach((item) => {
-          if (item.url) {
-            urls.add(normalizeUrl(item.url));
-          }
-        });
-        collection.subcollections.forEach(addUrlsFromCollection);
-      };
-      collections.forEach(addUrlsFromCollection);
-      return urls;
-    };
-
-    const existingUrls = getAllExistingUrls(existingCollections);
-
-    // Filter out duplicate bookmarks from browser collections
-    const filterDuplicateBookmarks = (collection: Collection): Collection => {
-      const filteredItems = collection.items.filter((item) => {
-        if (!item.url) {
-          return true;
-        }
-        return !existingUrls.has(normalizeUrl(item.url));
-      });
-
-      const filteredSubcollections = collection.subcollections.map(
-        filterDuplicateBookmarks,
-      );
-
-      return {
-        ...collection,
-        items: filteredItems,
-        subcollections: filteredSubcollections,
-      };
-    };
-
-    // Filter browser collections and merge with existing ones
-    const filteredBrowserCollections = browserCollections.map(
-      filterDuplicateBookmarks,
-    );
-
-    // Merge collections by name or add new ones
-    const mergedCollections = [...existingCollections];
-
-    filteredBrowserCollections.forEach((browserCollection) => {
-      // Check if a collection with the same name already exists
-      const existingIndex = mergedCollections.findIndex(
-        (existing) =>
-          existing.name.toLowerCase() === browserCollection.name.toLowerCase(),
-      );
-
-      if (existingIndex >= 0) {
-        // Merge into existing collection
-        const existing = mergedCollections[existingIndex];
-        mergedCollections[existingIndex] = {
-          ...existing,
-          items: [...existing.items, ...browserCollection.items],
-          subcollections: mergeBrowserBookmarks(
-            existing.subcollections,
-            browserCollection.subcollections,
-          ),
-          updatedAt: new Date(),
-        };
-      } else {
-        // Add as new collection if it has any content
-        if (
-          browserCollection.items.length > 0 ||
-          browserCollection.subcollections.length > 0
-        ) {
-          mergedCollections.push({
-            ...browserCollection,
-            id: generateId(), // Generate new ID for imported collection
-          });
-        }
-      }
-    });
-
-    return mergedCollections;
-  };
 
   const addNewCollection = async (name: string) => {
     const normalizedName = name.trim().toLowerCase();
@@ -330,19 +233,6 @@ export default function App() {
       showErrorToast("Selected collection not found");
       return;
     }
-
-    // Helper function to normalize URLs for comparison
-    const normalizeUrl = (url: string): string => {
-      try {
-        const urlObj = new URL(url);
-        // Remove trailing slash and convert to lowercase for comparison
-        // TODO: see if there is a better way to normalize URLs than regex
-        return urlObj.href.replace(/\/$/, "").toLowerCase();
-      } catch {
-        // If URL parsing fails, return original URL for comparison
-        return url.toLowerCase();
-      }
-    };
 
     // Get existing URLs in the selected collection
     const existingUrls = new Set(
@@ -624,7 +514,7 @@ export default function App() {
 
   const mergeBackupData = async (data: ParsedBackupData) => {
     try {
-      const mergedCollections = mergeBrowserBookmarks(
+      const mergedCollections = mergeCollections(
         collections(),
         data.collections,
       );
@@ -859,7 +749,7 @@ export default function App() {
           collections={collections()}
           onImportCollections={async (browserCollections: Collection[]) => {
             try {
-              const mergedCollections = mergeBrowserBookmarks(
+              const mergedCollections = mergeCollections(
                 collections(),
                 browserCollections,
               );

@@ -1,5 +1,5 @@
-import { For, Show, createSignal } from "solid-js";
-import { CollectionBookmark } from "./CollectionBookmarks";
+import { createSignal, For, Show } from "solid-js";
+import type { CollectionBookmark } from "./CollectionBookmarks";
 import DeleteCollectionModal from "./DeleteCollectionModal";
 
 interface BackupCollection {
