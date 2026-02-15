@@ -1,6 +1,10 @@
 browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.type === "export-backup") {
+  if (
+    message.type === "export-backup" ||
+    message.type === "auto-export-backup"
+  ) {
     const { json, filename } = message.payload;
+    const saveAs = message.type !== "auto-export-backup";
 
     try {
       const blob = new Blob([json], {
@@ -11,6 +15,8 @@ browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         .download({
           url,
           filename: filename,
+          saveAs,
+          conflictAction: "overwrite",
         })
         .then((downloadItemId) => {
           browser.downloads.onChanged.addListener(function onChange(delta) {

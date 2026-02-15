@@ -320,10 +320,11 @@ export default function App() {
       return;
     }
 
-    let tabs: browser.tabs.Tab[] | undefined = undefined;
+    let tabs: browser.tabs.Tab[] | undefined;
     try {
       tabs = await getSelectedTabs();
     } catch (error) {
+      console.error(error);
       showErrorToast("Failed to save selected tab(s).");
       return;
     }
@@ -368,9 +369,9 @@ export default function App() {
       })
       .map((tab) => {
         // Create a better title by getting the page title
-        let title = tab.title || "";
-        let url = tab.url || "";
-        let iconUrl = tab.favIconUrl || undefined;
+        const title = tab.title || "";
+        const url = tab.url || "";
+        const iconUrl = tab.favIconUrl || undefined;
 
         return {
           id: crypto.randomUUID(),
@@ -418,6 +419,7 @@ export default function App() {
 
     try {
       await updateAndStoreCollections(updateCollections(collections()));
+      await autoExportBackup();
     } catch (error) {
       console.error("Failed to add bookmark to collection:", error);
       showErrorToast("Failed to add bookmark to collection. Please try again.");
@@ -569,6 +571,32 @@ export default function App() {
     }
   };
 
+  const autoExportBackup = async () => {
+    try {
+      const data = {
+        collections: collections(),
+        mostRecentlyUpdatedCollections: mostRecentlyUpdatedCollections(),
+        exportDate: new Date().toISOString(),
+        version: "1.2.0",
+      };
+
+      const json = JSON.stringify(data, null, 2);
+      const filename = `better-bookmarks-backup-${new Date().toISOString().split("T")[0]}.json`;
+
+      const response: BackgroundScriptResponse =
+        await browser.runtime.sendMessage({
+          type: "auto-export-backup",
+          payload: { json, filename },
+        });
+
+      if (!response.success) {
+        console.error("Auto-backup failed:", response.error);
+      }
+    } catch (error) {
+      console.error("Auto-backup failed:", error);
+    }
+  };
+
   const handleBackupFileSelect = async (e: Event) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file) return;
@@ -630,6 +658,7 @@ export default function App() {
       setBookmarkItems({ title: "", bookmarks: [] });
 
       console.log("Successfully merged backup data");
+      await autoExportBackup();
       setBackupData(null);
 
       // If we're in the dedicated import backup tab, show success state
