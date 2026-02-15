@@ -198,6 +198,58 @@ export function handleEvent(
       }
       break;
     }
+    case "DELETE_BOOKMARK": {
+      const { bookmarkId } = event.payload;
+
+      const deleteBookmarkFromCollection = (
+        collections: Collection[],
+        bookmarkId: string,
+        selectedCollectionId?: string,
+      ): Collection[] =>
+        collections.map((collection) => {
+          if (collection.id === selectedCollectionId) {
+            const updatedItems = collection.items.filter(
+              (item) => item.id !== bookmarkId,
+            );
+            const newCollection = {
+              ...collection,
+              items: updatedItems,
+            };
+
+            // if these items are in view update the list of bookmarks
+            setStore("collectionBookmarks", {
+              title: newCollection.name,
+              bookmarks: newCollection.items,
+            });
+            return newCollection;
+          }
+          return {
+            ...collection,
+            subcollections: deleteBookmarkFromCollection(
+              collection.subcollections,
+              bookmarkId,
+              store.selectedCollectionId,
+            ),
+          };
+        });
+
+      try {
+        const updatedCollection = deleteBookmarkFromCollection(
+          store.collections,
+          bookmarkId,
+          store.selectedCollectionId,
+        );
+        setStore("collections", updatedCollection);
+        return {
+          type: "SET_COLLECTIONS",
+          payload: updatedCollection,
+        };
+      } catch (error) {
+        console.error("Failed to delete bookmark:", error);
+        // showErrorToast("Failed to delete bookmark. Please try again.");
+      }
+      break;
+    }
   }
   return undefined;
 }

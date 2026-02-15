@@ -297,6 +297,220 @@ describe("Store", () => {
       "4",
     ]);
   });
+
+  it("should handle DELETE_BOOKMARK", async () => {
+    const now = new Date();
+    const collections: Collection[] = [
+      {
+        id: "1",
+        name: "Collection 1",
+        createdAt: now,
+        updatedAt: now,
+        items: [
+          {
+            id: "2",
+            title: "Bookmark 2",
+            url: "https://example.com/bookmark2",
+            createdAt: now,
+            updatedAt: now,
+            iconUrl: "https://example.com/icon2.png",
+          },
+          {
+            id: "3",
+            title: "Bookmark 3",
+            url: "https://example.com/bookmark3",
+            createdAt: now,
+            updatedAt: now,
+            iconUrl: "https://example.com/icon3.png",
+          },
+        ],
+        subcollections: [],
+      },
+    ];
+    const initialState = createInitialState({
+      collections,
+      selectedCollectionId: "1",
+    });
+
+    const store = createStateStore(initialState);
+
+    const deleteBookmarkEffect = handleEvent(
+      {
+        type: "DELETE_BOOKMARK",
+        payload: {
+          bookmarkId: "2",
+        },
+      },
+      store,
+    );
+
+    expect(deleteBookmarkEffect?.type).toEqual("SET_COLLECTIONS");
+    expect(store.bookmarksStore.collections[0]).toEqual({
+      id: "1",
+      name: "Collection 1",
+      createdAt: now,
+      updatedAt: now,
+      items: [
+        {
+          id: "3",
+          title: "Bookmark 3",
+          url: "https://example.com/bookmark3",
+          createdAt: now,
+          updatedAt: now,
+          iconUrl: "https://example.com/icon3.png",
+        },
+      ],
+      subcollections: [],
+    });
+    expect(store.bookmarksStore.collections.length).toEqual(1);
+  });
+
+  it("should handle nested DELETE_BOOKMARK", async () => {
+    const now = new Date();
+    const collections: Collection[] = [
+      {
+        id: "1",
+        name: "Collection 1",
+        createdAt: now,
+        updatedAt: now,
+        items: [
+          {
+            id: "2",
+            title: "Bookmark 2",
+            url: "https://example.com/bookmark2",
+            createdAt: now,
+            updatedAt: now,
+            iconUrl: "https://example.com/icon2.png",
+          },
+          {
+            id: "3",
+            title: "Bookmark 3",
+            url: "https://example.com/bookmark3",
+            createdAt: now,
+            updatedAt: now,
+            iconUrl: "https://example.com/icon3.png",
+          },
+        ],
+        subcollections: [
+          {
+            id: "4",
+            name: "Subcollection 1",
+            createdAt: now,
+            updatedAt: now,
+            items: [
+              {
+                id: "5",
+                title: "Bookmark 5",
+                url: "https://example.com/bookmark5",
+                createdAt: now,
+                updatedAt: now,
+                iconUrl: "https://example.com/icon5.png",
+              },
+            ],
+            subcollections: [
+              {
+                id: "6",
+                name: "Subsubcollection 1",
+                createdAt: now,
+                updatedAt: now,
+                items: [
+                  {
+                    id: "7",
+                    title: "Bookmark 7",
+                    url: "https://example.com/bookmark7",
+                    createdAt: now,
+                    updatedAt: now,
+                    iconUrl: "https://example.com/icon7.png",
+                  },
+                ],
+                subcollections: [],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    const initialState = createInitialState({
+      collections,
+      selectedCollectionId: "6",
+    });
+
+    const store = createStateStore(initialState);
+
+    const deleteBookmarkEffect = handleEvent(
+      {
+        type: "DELETE_BOOKMARK",
+        payload: {
+          bookmarkId: "7",
+        },
+      },
+      store,
+    );
+
+    expect(deleteBookmarkEffect?.type).toEqual("SET_COLLECTIONS");
+    expect(
+      store.bookmarksStore.collections[0].subcollections[0].subcollections[0],
+    ).toEqual({
+      id: "6",
+      name: "Subsubcollection 1",
+      createdAt: now,
+      updatedAt: now,
+      items: [],
+      subcollections: [],
+    });
+    expect(store.bookmarksStore.collections[0]).toEqual({
+      id: "1",
+      name: "Collection 1",
+      createdAt: now,
+      updatedAt: now,
+      items: [
+        {
+          id: "2",
+          title: "Bookmark 2",
+          url: "https://example.com/bookmark2",
+          createdAt: now,
+          updatedAt: now,
+          iconUrl: "https://example.com/icon2.png",
+        },
+        {
+          id: "3",
+          title: "Bookmark 3",
+          url: "https://example.com/bookmark3",
+          createdAt: now,
+          updatedAt: now,
+          iconUrl: "https://example.com/icon3.png",
+        },
+      ],
+      subcollections: [
+        {
+          id: "4",
+          name: "Subcollection 1",
+          createdAt: now,
+          updatedAt: now,
+          items: [
+            {
+              id: "5",
+              title: "Bookmark 5",
+              url: "https://example.com/bookmark5",
+              createdAt: now,
+              updatedAt: now,
+              iconUrl: "https://example.com/icon5.png",
+            },
+          ],
+          subcollections: [
+            {
+              id: "6",
+              name: "Subsubcollection 1",
+              createdAt: now,
+              updatedAt: now,
+              items: [],
+              subcollections: [],
+            },
+          ],
+        },
+      ],
+    });
+  });
 });
 
 function createInitialState(overrides: Partial<AppState>): AppState {

@@ -16,4 +16,11 @@ export type SELECT_COLLECTION = {
   };
 };
 
-export type AppEvent = INSERT_COLLECTION | SELECT_COLLECTION;
+export type DELETE_BOOKMARK = {
+  type: "DELETE_BOOKMARK";
+  payload: {
+    bookmarkId: string;
+  };
+};
+
+export type AppEvent = INSERT_COLLECTION | SELECT_COLLECTION | DELETE_BOOKMARK;
