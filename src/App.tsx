@@ -1,7 +1,10 @@
 import { createSignal, Match, onMount, Show, Switch } from "solid-js";
 import type { BackgroundScriptResponse } from "./background_script_types";
 import AddCollectionButton from "./components/AddCollectionButton";
-import BackupBookmarks, { type BackupData } from "./components/BackupBookmarks";
+import BackupBookmarks, {
+  BackupData,
+  type ParsedBackupData,
+} from "./components/BackupBookmarks";
 import BrowserBookmarks from "./components/BrowserBookmarks";
 import CollectionBookmarksComponent, {
   type CollectionBookmark,
@@ -11,6 +14,7 @@ import Collections, { type Collection } from "./components/Collections";
 import ErrorToast, { showErrorToast } from "./components/ErrorToast";
 import Favorites from "./components/Favorites";
 import ImportTabButton from "./components/ImportTabButton";
+import { mapBackupDatesToJavascriptDate } from "./Collections";
 
 interface CollectionFetchState {
   status: "pending" | "success" | "error";
@@ -49,7 +53,9 @@ export default function App() {
   const [currentExpandedCollections, setCurrentExpandedCollections] =
     createSignal<string[]>([]);
   const [browserBookmarksOpen, setBrowserBookmarksOpen] = createSignal(false);
-  const [backupData, setBackupData] = createSignal<BackupData | null>(null);
+  const [backupData, setBackupData] = createSignal<ParsedBackupData | null>(
+    null,
+  );
   const [isImportBackupTab, setIsImportBackupTab] = createSignal(false);
   const [importBackupDone, setImportBackupDone] = createSignal(false);
   let backupFileInputRef: HTMLInputElement | undefined;
@@ -72,7 +78,6 @@ export default function App() {
   browser.storage.local
     .get(["collections", "mostRecentlyUpdatedCollections"])
     .then((data) => {
-      console.log(data);
       setCollections(data.collections || []);
       setMostRecentlyUpdatedCollections(
         data.mostRecentlyUpdatedCollections || [],
@@ -93,7 +98,7 @@ export default function App() {
   const findCollectionById = (
     collections: Collection[],
     id: string,
-  ): Collection | null => {
+  ): Collection | undefined => {
     for (const collection of collections) {
       if (collection.id === id) {
         return collection;
@@ -103,7 +108,7 @@ export default function App() {
         return found;
       }
     }
-    return null;
+    return undefined;
   };
 
   // Helper function to normalize URLs for comparison
@@ -287,7 +292,7 @@ export default function App() {
         mostRecentlyUpdatedCollections: updated,
       })
       .catch((err) => {
-        console.log(`error storing favorites: ${err}`);
+        console.error(`error storing favorites: ${err}`);
       });
   };
 
@@ -526,7 +531,7 @@ export default function App() {
       setSelectedFavoriteId(undefined);
       const selectedCollection = findCollectionById(
         collections(),
-        collection.id,
+        selectedCollectionId()!,
       );
       if (selectedCollection) {
         setBookmarkItems({
@@ -540,6 +545,7 @@ export default function App() {
           bookmarks: [],
         });
       }
+      console.log(collectionBookmarks());
     }
   };
 
@@ -603,14 +609,15 @@ export default function App() {
 
     try {
       const text = await file.text();
-      const data = JSON.parse(text);
+      const data: BackupData = JSON.parse(text);
 
       // Validate the backup data
       if (!data.collections || !Array.isArray(data.collections)) {
         throw new Error("Invalid backup file format");
       }
+      const parsedBackupData = mapBackupDatesToJavascriptDate(data);
 
-      setBackupData(data as BackupData);
+      setBackupData(parsedBackupData);
     } catch (error) {
       console.error("Failed to read backup file:", error);
       showErrorToast(
@@ -628,7 +635,7 @@ export default function App() {
     backupFileInputRef?.click();
   };
 
-  const mergeBackupData = async (data: BackupData) => {
+  const mergeBackupData = async (data: ParsedBackupData) => {
     try {
       const mergedCollections = mergeBrowserBookmarks(
         collections(),

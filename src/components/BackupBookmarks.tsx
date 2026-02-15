@@ -1,5 +1,5 @@
 import { createSignal, For, Show } from "solid-js";
-import type { Collection } from "./Collections";
+import type { BackupCollection, Collection } from "./Collections";
 import type { CollectionBookmark } from "./CollectionBookmarks";
 
 interface Favorite {
@@ -8,6 +8,13 @@ interface Favorite {
 }
 
 interface BackupData {
+  collections: BackupCollection[];
+  mostRecentlyUpdatedCollections?: Favorite[];
+  exportDate?: string;
+  version?: string;
+}
+
+interface ParsedBackupData {
   collections: Collection[];
   mostRecentlyUpdatedCollections?: Favorite[];
   exportDate?: string;
@@ -16,11 +23,11 @@ interface BackupData {
 
 interface BackupBookmarksProps {
   onClose: () => void;
-  backupData: BackupData;
-  onMergeBackup: (backupData: BackupData) => Promise<void>;
+  backupData: ParsedBackupData;
+  onMergeBackup: (backupData: ParsedBackupData) => Promise<void>;
 }
 
-export type { BackupData };
+export type { ParsedBackupData, BackupData };
 
 export default function BackupBookmarks(props: BackupBookmarksProps) {
   const [merging, setMerging] = createSignal(false);

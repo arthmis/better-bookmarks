@@ -2,6 +2,24 @@ import { For, Show, createSignal } from "solid-js";
 import { CollectionBookmark } from "./CollectionBookmarks";
 import DeleteCollectionModal from "./DeleteCollectionModal";
 
+interface BackupCollection {
+  id: string;
+  name: string;
+  items: BackupCollectionBookmark[];
+  subcollections: BackupCollection[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BackupCollectionBookmark {
+  id: string;
+  title: string;
+  url: string;
+  iconUrl: string | undefined;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface Collection {
   id: string;
   name: string;
@@ -215,4 +233,4 @@ export default function Collections(props: CollectionsProps) {
   );
 }
 
-export type { Collection };
+export type { BackupCollection, Collection };

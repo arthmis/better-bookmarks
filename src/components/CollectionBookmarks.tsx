@@ -1,4 +1,4 @@
-import { For, Show } from "solid-js";
+import { createMemo, For, Show } from "solid-js";
 
 export interface CollectionBookmarks {
   title: string;
@@ -22,14 +22,15 @@ interface CollectionBookmarksProps {
 export default function CollectionBookmarksComponent(
   props: CollectionBookmarksProps,
 ) {
-  const sortedBookmarks = () =>
-    props.collection.bookmarks.toSorted((bookmarkA, bookmarkB) => {
+  const sortedBookmarks = createMemo(() => {
+    return props.collection.bookmarks.toSorted((bookmarkA, bookmarkB) => {
       if (bookmarkA.createdAt >= bookmarkB.createdAt) {
         return -1;
       } else {
         return 1;
       }
     });
+  });
   return (
     <>
       <h1 class="p-4 pb-2 tracking-wide">{props.collection.title}</h1>
