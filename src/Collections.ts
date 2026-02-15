@@ -5,6 +5,10 @@ import type {
 import type { CollectionBookmark } from "./components/CollectionBookmarks";
 import type { BackupCollection, Collection } from "./components/Collections";
 
+type CollectionStore = {
+  collections: Collection[];
+};
+
 export function mapBackupDatesToJavascriptDate(
   backupData: BackupData,
 ): ParsedBackupData {
@@ -34,3 +38,19 @@ export function mapBackupDatesToJavascriptDate(
     collections: parsedCollections,
   };
 }
+
+export const findCollectionById = (
+  collections: Collection[],
+  id: string,
+): Collection | undefined => {
+  for (const collection of collections) {
+    if (collection.id === id) {
+      return collection;
+    }
+    const found = findCollectionById(collection.subcollections, id);
+    if (found) {
+      return found;
+    }
+  }
+  return undefined;
+};

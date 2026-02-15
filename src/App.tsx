@@ -14,7 +14,10 @@ import Collections, { type Collection } from "./components/Collections";
 import ErrorToast, { showErrorToast } from "./components/ErrorToast";
 import Favorites from "./components/Favorites";
 import ImportTabButton from "./components/ImportTabButton";
-import { mapBackupDatesToJavascriptDate } from "./Collections";
+import {
+  findCollectionById,
+  mapBackupDatesToJavascriptDate,
+} from "./Collections";
 
 interface CollectionFetchState {
   status: "pending" | "success" | "error";
@@ -93,22 +96,6 @@ export default function App() {
 
   const generateId = () => {
     return crypto.randomUUID();
-  };
-
-  const findCollectionById = (
-    collections: Collection[],
-    id: string,
-  ): Collection | undefined => {
-    for (const collection of collections) {
-      if (collection.id === id) {
-        return collection;
-      }
-      const found = findCollectionById(collection.subcollections, id);
-      if (found) {
-        return found;
-      }
-    }
-    return undefined;
   };
 
   // Helper function to normalize URLs for comparison
