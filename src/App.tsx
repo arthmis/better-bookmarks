@@ -685,14 +685,11 @@ export default function App() {
                       Export Backup
                     </button>
                     <button
-                      type="button"
-                      onClick={async () => {
-                        await importBackup();
-                      }}
-                      class="btn btn-primary"
+                      onClick={() => setBrowserBookmarksOpen(true)}
+                      class="btn btn-secondary"
                     >
-                      <span class="text-sm">📥</span>
-                      Import Backup
+                      <span class="text-sm">🔖</span>
+                      Import Browser Bookmarks
                     </button>
                   </div>
                 </div>
