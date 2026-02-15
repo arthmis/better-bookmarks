@@ -551,6 +551,57 @@ export default function App() {
     }
   };
 
+  const importBackup = () => {
+    try {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json,.json";
+
+      input.onchange = async (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+
+        try {
+          const text = await file.text();
+          const data = JSON.parse(text);
+
+          // Validate the backup data
+          if (!data.collections || !Array.isArray(data.collections)) {
+            throw new Error("Invalid backup file format");
+          }
+
+          // Confirm with user before overwriting
+          // todo show a modal here
+
+          // Restore the data
+          await updateAndStoreCollections(data.collections);
+          setMostRecentlyUpdatedCollections(
+            data.mostRecentlyUpdatedCollections || [],
+          );
+          await browser.storage.local.set({
+            mostRecentlyUpdatedCollections:
+              data.mostRecentlyUpdatedCollections || [],
+          });
+
+          // Clear selections
+          setSelectedCollectionId(undefined);
+          setSelectedFavoriteId(undefined);
+          setBookmarkItems({ title: "", bookmarks: [] });
+        } catch (error) {
+          console.error("Failed to import backup:", error);
+          showErrorToast(
+            "Failed to import backup. Please check the file and try again.",
+          );
+        }
+      };
+
+      input.click();
+    } catch (error) {
+      console.error("Failed to import backup:", error);
+      showErrorToast("Failed to import backup. Please try again.");
+    }
+  };
+
   return (
     // firefox web extension can only grow up to 800px wide by 600px high
     <div class="h-full flex w-full">
@@ -624,13 +675,6 @@ export default function App() {
                     class="dropdown-content card card-sm bg-base-100 z-1 w-64 shadow-md flex flex-col gap-2 p-2"
                   >
                     <button
-                      onClick={() => setBrowserBookmarksOpen(true)}
-                      class="btn btn-secondary"
-                    >
-                      <span class="text-sm">🔖</span>
-                      Import Browser Bookmarks
-                    </button>
-                    <button
                       type="button"
                       onClick={async () => {
                         await exportBackup();
@@ -639,6 +683,16 @@ export default function App() {
                     >
                       <span class="text-sm">💾</span>
                       Export Backup
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await importBackup();
+                      }}
+                      class="btn btn-primary"
+                    >
+                      <span class="text-sm">📥</span>
+                      Import Backup
                     </button>
                   </div>
                 </div>
