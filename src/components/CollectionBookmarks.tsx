@@ -83,6 +83,7 @@ export default function CollectionBookmarksComponent(
                     </div>
                   </div>
                   <button
+                    type="button"
                     aria-label="Delete Bookmark"
                     onClick={() => props.handleDeleteBookmark(bookmark.id)}
                     class="btn btn-square btn-ghost"

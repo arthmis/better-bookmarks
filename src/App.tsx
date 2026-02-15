@@ -1,16 +1,16 @@
 import { createSignal, Match, onMount, Show, Switch } from "solid-js";
-import Collections, { Collection } from "./components/Collections";
+import type { BackgroundScriptResponse } from "./background_script_types";
 import AddCollectionButton from "./components/AddCollectionButton";
-import ImportTabButton from "./components/ImportTabButton";
-import ErrorToast, { showErrorToast } from "./components/ErrorToast";
-import CollectionBookmarksComponent, {
-  CollectionBookmarks,
-  CollectionBookmark,
-} from "./components/CollectionBookmarks";
+import BackupBookmarks, { type BackupData } from "./components/BackupBookmarks";
 import BrowserBookmarks from "./components/BrowserBookmarks";
-import BackupBookmarks, { BackupData } from "./components/BackupBookmarks";
+import CollectionBookmarksComponent, {
+  type CollectionBookmark,
+  type CollectionBookmarks,
+} from "./components/CollectionBookmarks";
+import Collections, { type Collection } from "./components/Collections";
+import ErrorToast, { showErrorToast } from "./components/ErrorToast";
 import Favorites from "./components/Favorites";
-import { BackgroundScriptResponse } from "./background_script_types";
+import ImportTabButton from "./components/ImportTabButton";
 
 interface CollectionFetchState {
   status: "pending" | "success" | "error";
@@ -223,7 +223,7 @@ export default function App() {
       // Check subcollections of selected collection for duplicates
       const selectedCollection = findCollectionById(
         collections(),
-        selectedCollectionId()!,
+        selectedCollectionId(),
       );
       if (
         selectedCollection &&
@@ -246,9 +246,8 @@ export default function App() {
       try {
         await updateAndStoreCollections([...collections(), newCollection]);
       } catch (error) {
+        console.error(error);
         showErrorToast("Failed to add or update collection. Please try again.");
-      } finally {
-        return;
       }
     }
 
@@ -469,6 +468,7 @@ export default function App() {
         );
       }
     } catch (error) {
+      console.error(error);
       showErrorToast("Failed to delete collection. Please try again.");
     }
   };
@@ -799,16 +799,13 @@ export default function App() {
                     activeTab={activeTab()}
                   />
                   <div class="dropdown dropdown-bottom dropdown-end">
-                    <button tabIndex={0} class="btn btn-ghost m-1">
+                    <button type="button" class="btn btn-ghost m-1">
                       <img
                         src="/assets/horizontal-dots.svg"
                         alt="Extra Options"
                       />
                     </button>
-                    <div
-                      tabIndex={0}
-                      class="dropdown-content card card-sm bg-base-100 z-1 w-64 shadow-md flex flex-col gap-2 p-2"
-                    >
+                    <div class="dropdown-content card card-sm bg-base-100 z-1 w-64 shadow-md flex flex-col gap-2 p-2">
                       <button
                         type="button"
                         onClick={async () => {
@@ -820,6 +817,7 @@ export default function App() {
                         Export Backup
                       </button>
                       <button
+                        type="button"
                         onClick={() => setBrowserBookmarksOpen(true)}
                         class="btn btn-secondary"
                       >
