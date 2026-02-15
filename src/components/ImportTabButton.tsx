@@ -1,4 +1,4 @@
-import { Collection } from "./Collections";
+import { Collection } from "./StateStore";
 
 interface ImportTabButtonProps {
   selectedCollectionId?: string;

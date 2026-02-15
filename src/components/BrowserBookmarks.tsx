@@ -1,5 +1,5 @@
 import { createSignal, For, Show, createResource, Suspense } from "solid-js";
-import { Collection } from "./Collections";
+import { Collection } from "./StateStore";
 import { CollectionBookmark } from "./CollectionBookmarks";
 
 interface BrowserBookmarksProps {

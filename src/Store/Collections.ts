@@ -1,14 +1,102 @@
+import { createStore } from "solid-js/store";
 import type {
   BackupData,
   ParsedBackupData,
-} from "./components/BackupBookmarks";
-import type { CollectionBookmark } from "./components/CollectionBookmarks";
-import type { BackupCollection, Collection } from "./components/Collections";
-import { generateId } from "./utils";
+} from "../components/BackupBookmarks";
+import type {
+  CollectionBookmark,
+  CollectionBookmarks,
+} from "../components/CollectionBookmarks";
+import type { BackupCollection, Collection } from "../components/StateStore";
+import { generateId } from "../utils";
+import { Favorite } from "../components/Favorites";
+import { Effect } from "./Effects";
 
-type CollectionStore = {
+export interface CollectionFetchState {
+  status: "pending" | "success" | "error";
+  data?: Collection[];
+  error?: Error;
+}
+
+export interface AppState {
   collections: Collection[];
-};
+  selectedCollectionId: string | undefined;
+  selectedFavoriteId: string | undefined;
+  activeTab: "collections" | "favorites";
+  collectionBookmarks: CollectionBookmarks;
+  fetchDataState: CollectionFetchState;
+  currentExpandedCollections: string[];
+  browserBookmarksOpen: boolean;
+  backupData: ParsedBackupData | undefined;
+  isImportBackupTab: boolean;
+  importBackupDone: boolean;
+  backupFileInputRef: HTMLInputElement | undefined;
+  mostRecentlyUpdatedCollections: Favorite[];
+}
+
+export function createStateStore() {
+  const storeState: AppState = {
+    collections: [],
+    selectedCollectionId: undefined,
+    selectedFavoriteId: undefined,
+    activeTab: "collections",
+    collectionBookmarks: {
+      title: "",
+      bookmarks: [],
+    },
+    fetchDataState: { status: "pending", data: undefined, error: undefined },
+    currentExpandedCollections: [],
+    browserBookmarksOpen: false,
+    backupData: undefined,
+    isImportBackupTab: false,
+    importBackupDone: false,
+    backupFileInputRef: undefined,
+    mostRecentlyUpdatedCollections: [],
+  };
+
+  const [bookmarksStore, setBookmarksStore] = createStore<AppState>(storeState);
+
+  return { bookmarksStore, setBookmarksStore };
+}
+const { bookmarksStore, setBookmarksStore } = createStateStore();
+
+function handleEvent(
+  event: Event,
+  storeInstance?: ReturnType<typeof createStateStore>,
+): Effect | undefined {
+  return undefined;
+}
+
+function handleEffect(
+  effect: Effect,
+  storeInstance?: ReturnType<typeof createStateStore>,
+): void {
+  const store = storeInstance ?? bookmarksStore;
+  switch (effect.type) {
+    case "SET_CURRENT_EXPANDED_COLLECTIONS":
+      setBookmarksStore({
+        ...store,
+        currentExpandedCollections: effect.payload,
+      });
+      break;
+    case "SET_SELECTED_COLLECTION":
+      setBookmarksStore({
+        ...store,
+        selectedCollectionId: effect.payload,
+      });
+      break;
+  }
+}
+
+export function dispatch(
+  event: Event,
+  storeInstance?: ReturnType<typeof createStateStore>,
+) {
+  const effect = handleEvent(event, storeInstance);
+  if (effect) {
+    handleEffect(effect, storeInstance);
+  }
+}
 
 export function mapBackupDatesToJavascriptDate(
   backupData: BackupData,

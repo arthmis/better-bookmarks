@@ -1,11 +1,12 @@
 import { createSignal, Match, onMount, Show, Switch } from "solid-js";
 import type { BackgroundScriptResponse } from "./background_script_types";
 import {
+  CollectionFetchState,
   findCollectionById,
   mapBackupDatesToJavascriptDate,
   mergeCollections,
   normalizeUrl,
-} from "./Collections";
+} from "./Store/Collections";
 import AddCollectionButton from "./components/AddCollectionButton";
 import BackupBookmarks, {
   type BackupData,
@@ -16,24 +17,13 @@ import CollectionBookmarksComponent, {
   type CollectionBookmark,
   type CollectionBookmarks,
 } from "./components/CollectionBookmarks";
-import Collections, { type Collection } from "./components/Collections";
+import Collections, { type Collection } from "./components/StateStore";
 import ErrorToast, { showErrorToast } from "./components/ErrorToast";
-import Favorites from "./components/Favorites";
+import Favorites, { Favorite } from "./components/Favorites";
 import ImportTabButton from "./components/ImportTabButton";
 import { generateId } from "./utils";
 import { ImportBackupView } from "./components/ImportBackup/ImportBackupView";
 import { ImportBackupSuccessView } from "./components/ImportBackup/ImportBackupSuccessView";
-
-interface CollectionFetchState {
-  status: "pending" | "success" | "error";
-  data?: Collection[];
-  error?: Error;
-}
-
-interface Favorite {
-  id: string;
-  name: string;
-}
 
 export default function App() {
   const [selectedCollectionId, setSelectedCollectionId] = createSignal<

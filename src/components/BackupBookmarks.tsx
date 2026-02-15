@@ -1,11 +1,6 @@
 import { createSignal, For, Show } from "solid-js";
-import type { BackupCollection, Collection } from "./Collections";
+import type { BackupCollection, Collection } from "./StateStore";
 import type { CollectionBookmark } from "./CollectionBookmarks";
-
-interface Favorite {
-  id: string;
-  name: string;
-}
 
 interface BackupData {
   collections: BackupCollection[];
