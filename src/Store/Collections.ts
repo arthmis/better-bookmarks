@@ -7,11 +7,11 @@ import type {
   CollectionBookmark,
   CollectionBookmarks,
 } from "../components/CollectionBookmarks";
+import type { Favorite } from "../components/Favorites";
 import type { BackupCollection, Collection } from "../components/StateStore";
 import { generateId } from "../utils";
-import { Favorite } from "../components/Favorites";
-import { Effect } from "./Effects";
-import { AppEvent } from "./Events";
+import type { Effect } from "./Effects";
+import type { AppEvent } from "./Events";
 
 export interface CollectionFetchState {
   status: "pending" | "success" | "error";
@@ -35,7 +35,7 @@ export interface AppState {
   mostRecentlyUpdatedCollections: Favorite[];
 }
 
-export function createStateStore() {
+export function createStateStore(initialState?: AppState) {
   const storeState: AppState = {
     collections: [],
     selectedCollectionId: undefined,
@@ -54,8 +54,18 @@ export function createStateStore() {
     backupFileInputRef: undefined,
     mostRecentlyUpdatedCollections: [],
   };
+  let state: AppState;
 
-  const [bookmarksStore, setBookmarksStore] = createStore<AppState>(storeState);
+  if (initialState) {
+    state = {
+      ...storeState,
+      ...initialState,
+    };
+  } else {
+    state = storeState;
+  }
+
+  const [bookmarksStore, setBookmarksStore] = createStore<AppState>(state);
 
   return { bookmarksStore, setBookmarksStore };
 }
@@ -152,6 +162,41 @@ export function handleEvent(
         console.error("Failed to add or update collection:", error);
         // showErrorToast("Failed to add or update collection. Please try again.");
       }
+      break;
+    }
+    case "SELECT_COLLECTION": {
+      const {
+        payload: { collectionId, currentExpandedCollections },
+      } = event;
+
+      if (store.selectedCollectionId === collectionId) {
+        setStore("selectedCollectionId", undefined);
+        setStore("collectionBookmarks", { title: "", bookmarks: [] });
+
+        const idIndex = currentExpandedCollections.indexOf(collectionId);
+        setStore(
+          "currentExpandedCollections",
+          currentExpandedCollections.toSpliced(idIndex),
+        );
+      } else {
+        setStore("selectedCollectionId", collectionId);
+        setStore("selectedFavoriteId", undefined);
+
+        const selectedCollection = findCollectionById(
+          store.collections,
+          store.selectedCollectionId!,
+        );
+        if (selectedCollection) {
+          setStore("collectionBookmarks", {
+            title: selectedCollection.name,
+            bookmarks: selectedCollection.items,
+          });
+          setStore("currentExpandedCollections", currentExpandedCollections);
+        } else {
+          setStore("collectionBookmarks", { title: "", bookmarks: [] });
+        }
+      }
+      break;
     }
   }
   return undefined;
