@@ -516,7 +516,7 @@ export default function App() {
         title: "",
         bookmarks: [],
       });
-      let idIndex = currentExpandedCollections.indexOf(collection.id);
+      const idIndex = currentExpandedCollections.indexOf(collection.id);
       setCurrentExpandedCollections(
         currentExpandedCollections.toSpliced(idIndex),
       );
@@ -526,7 +526,7 @@ export default function App() {
       setSelectedFavoriteId(undefined);
       const selectedCollection = findCollectionById(
         collections(),
-        selectedCollectionId()!,
+        collection.id,
       );
       if (selectedCollection) {
         setBookmarkItems({
