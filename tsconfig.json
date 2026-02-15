@@ -10,6 +10,6 @@
     "jsxImportSource": "solid-js",
     "types": ["vite/client", "firefox-webext-browser"],
     "noEmit": true,
-    "isolatedModules": true
-  }
+    "isolatedModules": true,
+  },
 }

@@ -9,6 +9,7 @@ import CollectionBookmarksComponent, {
 } from "./components/CollectionBookmarks";
 import BrowserBookmarks from "./components/BrowserBookmarks";
 import Favorites from "./components/Favorites";
+import { BackgroundScriptResponse } from "./background_script_types";
 
 interface CollectionFetchState {
   status: "pending" | "success" | "error";
@@ -53,6 +54,7 @@ export default function App() {
   browser.storage.local
     .get(["collections", "mostRecentlyUpdatedCollections"])
     .then((data) => {
+      console.log(data);
       setCollections(data.collections || []);
       setMostRecentlyUpdatedCollections(
         data.mostRecentlyUpdatedCollections || [],
@@ -441,7 +443,7 @@ export default function App() {
         });
 
         // Remove the deleted collection from expanded collections but keep ancestors
-        let idIndex = currentExpandedCollections().indexOf(collectionId);
+        const idIndex = currentExpandedCollections().indexOf(collectionId);
         setCurrentExpandedCollections(
           currentExpandedCollections().toSpliced(idIndex),
         );
@@ -521,6 +523,34 @@ export default function App() {
     }
   };
 
+  const exportBackup = async () => {
+    try {
+      const data = {
+        collections: collections(),
+        mostRecentlyUpdatedCollections: mostRecentlyUpdatedCollections(),
+        exportDate: new Date().toISOString(),
+        version: "1.2.0",
+      };
+
+      const json = JSON.stringify(data, null, 2);
+      const filename = `better-bookmarks-backup-${new Date().toISOString().split("T")[0]}.json`;
+
+      const response: BackgroundScriptResponse =
+        await browser.runtime.sendMessage({
+          type: "export-backup",
+          payload: { json, filename },
+        });
+
+      if (!response.success) {
+        console.error(response.error);
+        showErrorToast("Failed to export backup. Please try again.");
+      }
+    } catch (error) {
+      console.error("Failed to export backup:", error);
+      showErrorToast("Failed to export backup. Please try again.");
+    }
+  };
+
   return (
     // firefox web extension can only grow up to 800px wide by 600px high
     <div class="h-full flex w-full">
@@ -591,7 +621,7 @@ export default function App() {
                   </button>
                   <div
                     tabIndex={0}
-                    class="dropdown-content card card-sm bg-base-100 z-1 w-64 shadow-md"
+                    class="dropdown-content card card-sm bg-base-100 z-1 w-64 shadow-md flex flex-col gap-2 p-2"
                   >
                     <button
                       onClick={() => setBrowserBookmarksOpen(true)}
@@ -599,6 +629,16 @@ export default function App() {
                     >
                       <span class="text-sm">🔖</span>
                       Import Browser Bookmarks
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await exportBackup();
+                      }}
+                      class="btn btn-primary"
+                    >
+                      <span class="text-sm">💾</span>
+                      Export Backup
                     </button>
                   </div>
                 </div>

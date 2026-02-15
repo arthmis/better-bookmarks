@@ -7,4 +7,22 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  build: {
+    rollupOptions: {
+      input: {
+        index: "index.html",
+        background: "src/background.ts",
+      },
+      output: {
+        entryFileNames: (chunkInfo) => {
+          // want to retain the name of the background script file because the manifest.json expects the exact name
+          if (chunkInfo.name === "background") {
+            return "background.js";
+          }
+
+          return "assets/[name]-[hash].js";
+        },
+      },
+    },
+  },
 });
