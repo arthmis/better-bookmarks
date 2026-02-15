@@ -22,13 +22,22 @@ interface CollectionBookmarksProps {
 export default function CollectionBookmarksComponent(
   props: CollectionBookmarksProps,
 ) {
+  const sortedBookmarks = props.collection.bookmarks.toSorted(
+    (bookmarkA, bookmarkB) => {
+      if (bookmarkA.createdAt >= bookmarkB.createdAt) {
+        return -1;
+      } else {
+        return 1;
+      }
+    },
+  );
   return (
     <>
       <h1 class="p-4 pb-2 tracking-wide">{props.collection.title}</h1>
       <div class="h-full w-full overflow-y-auto">
         <ul class="list bg-base-100">
           <For
-            each={props.collection.bookmarks}
+            each={sortedBookmarks}
             fallback={
               <div class="p-4">
                 Select a collection, some tabs and add add the tabs to the
