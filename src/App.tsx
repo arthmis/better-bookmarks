@@ -1,4 +1,4 @@
-import { createSignal, Match, Show, Switch } from "solid-js";
+import { createSignal, Match, onMount, Show, Switch } from "solid-js";
 import Collections, { Collection } from "./components/Collections";
 import AddCollectionButton from "./components/AddCollectionButton";
 import ImportTabButton from "./components/ImportTabButton";
@@ -8,6 +8,7 @@ import CollectionBookmarksComponent, {
   CollectionBookmark,
 } from "./components/CollectionBookmarks";
 import BrowserBookmarks from "./components/BrowserBookmarks";
+import BackupBookmarks, { BackupData } from "./components/BackupBookmarks";
 import Favorites from "./components/Favorites";
 import { BackgroundScriptResponse } from "./background_script_types";
 
@@ -48,8 +49,25 @@ export default function App() {
   const [currentExpandedCollections, setCurrentExpandedCollections] =
     createSignal<string[]>([]);
   const [browserBookmarksOpen, setBrowserBookmarksOpen] = createSignal(false);
+  const [backupData, setBackupData] = createSignal<BackupData | null>(null);
+  const [isImportBackupTab, setIsImportBackupTab] = createSignal(false);
+  const [importBackupDone, setImportBackupDone] = createSignal(false);
+  let backupFileInputRef: HTMLInputElement | undefined;
   const [mostRecentlyUpdatedCollections, setMostRecentlyUpdatedCollections] =
     createSignal<Favorite[]>([]);
+
+  // Detect if opened in a tab for backup import
+  onMount(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("importBackup") === "true") {
+      setIsImportBackupTab(true);
+      document.body.classList.add("in-tab");
+      // Wait for the DOM to settle, then auto-click the file input
+      setTimeout(() => {
+        backupFileInputRef?.click();
+      }, 500);
+    }
+  });
 
   browser.storage.local
     .get(["collections", "mostRecentlyUpdatedCollections"])
@@ -551,164 +569,268 @@ export default function App() {
     }
   };
 
-  const importBackup = () => {
+  const handleBackupFileSelect = async (e: Event) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
     try {
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "application/json,.json";
+      const text = await file.text();
+      const data = JSON.parse(text);
 
-      input.onchange = async (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (!file) return;
+      // Validate the backup data
+      if (!data.collections || !Array.isArray(data.collections)) {
+        throw new Error("Invalid backup file format");
+      }
 
-        try {
-          const text = await file.text();
-          const data = JSON.parse(text);
-
-          // Validate the backup data
-          if (!data.collections || !Array.isArray(data.collections)) {
-            throw new Error("Invalid backup file format");
-          }
-
-          // Confirm with user before overwriting
-          // todo show a modal here
-
-          // Restore the data
-          await updateAndStoreCollections(data.collections);
-          setMostRecentlyUpdatedCollections(
-            data.mostRecentlyUpdatedCollections || [],
-          );
-          await browser.storage.local.set({
-            mostRecentlyUpdatedCollections:
-              data.mostRecentlyUpdatedCollections || [],
-          });
-
-          // Clear selections
-          setSelectedCollectionId(undefined);
-          setSelectedFavoriteId(undefined);
-          setBookmarkItems({ title: "", bookmarks: [] });
-        } catch (error) {
-          console.error("Failed to import backup:", error);
-          showErrorToast(
-            "Failed to import backup. Please check the file and try again.",
-          );
-        }
-      };
-
-      input.click();
+      setBackupData(data as BackupData);
     } catch (error) {
-      console.error("Failed to import backup:", error);
-      showErrorToast("Failed to import backup. Please try again.");
+      console.error("Failed to read backup file:", error);
+      showErrorToast(
+        "Failed to read backup file. Please check the file and try again.",
+      );
+    } finally {
+      // Reset the file input so the same file can be selected again
+      if (backupFileInputRef) {
+        backupFileInputRef.value = "";
+      }
+    }
+  };
+
+  const openBackupFilePicker = () => {
+    backupFileInputRef?.click();
+  };
+
+  const mergeBackupData = async (data: BackupData) => {
+    try {
+      const mergedCollections = mergeBrowserBookmarks(
+        collections(),
+        data.collections,
+      );
+      await updateAndStoreCollections(mergedCollections);
+
+      if (data.mostRecentlyUpdatedCollections) {
+        const currentFavorites = mostRecentlyUpdatedCollections();
+        const mergedFavorites = [...currentFavorites];
+
+        for (const fav of data.mostRecentlyUpdatedCollections) {
+          if (!mergedFavorites.some((f) => f.id === fav.id)) {
+            mergedFavorites.push(fav);
+          }
+        }
+
+        setMostRecentlyUpdatedCollections(mergedFavorites);
+        await browser.storage.local.set({
+          mostRecentlyUpdatedCollections: mergedFavorites,
+        });
+      }
+
+      // Clear selections
+      setSelectedCollectionId(undefined);
+      setSelectedFavoriteId(undefined);
+      setBookmarkItems({ title: "", bookmarks: [] });
+
+      console.log("Successfully merged backup data");
+      setBackupData(null);
+
+      // If we're in the dedicated import backup tab, show success state
+      if (isImportBackupTab()) {
+        setImportBackupDone(true);
+      }
+    } catch (error) {
+      console.error("Failed to merge backup:", error);
+      showErrorToast("Failed to merge backup. Please try again.");
     }
   };
 
   return (
     // firefox web extension can only grow up to 800px wide by 600px high
     <div class="h-full flex w-full">
-      <Switch fallback={<div>Getting bookmarks</div>}>
-        <Match when={fetchDataState().status === "success"}>
-          <div class="flex w-full h-full">
-            <div class="tabs tabs-lift flex w-[300px]">
-              {/* Sidebar Content */}
-              {/* Tab Navigation for Sidebar */}
-              <input
-                type="radio"
-                class="tab"
-                aria-label="Collections"
-                checked={activeTab() === "collections"}
-                onClick={() => setActiveTab("collections")}
-              />
-              <Show when={activeTab() === "collections"}>
-                <div class="tab-content bg-base-100 border-base-300">
-                  <Collections
-                    collections={collections()}
-                    selectedCollectionId={selectedCollectionId()}
-                    onSelectCollection={handleSelectCollection}
-                    onDeleteCollection={handleDeleteCollection}
-                    path={[]}
-                    setCurrentExpandedCollections={
-                      setCurrentExpandedCollections
-                    }
-                    currentExpandedCollections={currentExpandedCollections()}
-                  />
-                </div>
-              </Show>
+      <input
+        type="file"
+        accept="application/json,.json"
+        ref={backupFileInputRef}
+        class="hidden"
+        onChange={handleBackupFileSelect}
+      />
 
-              <input
-                type="radio"
-                class="tab"
-                aria-label="Favorites"
-                checked={activeTab() === "favorites"}
-                onClick={() => setActiveTab("favorites")}
-              />
-              <Show when={activeTab() === "favorites"}>
-                <div class="tab-content bg-base-100 border-base-300">
-                  <Favorites
-                    favorites={mostRecentlyUpdatedCollections()}
-                    selectedFavoriteId={selectedFavoriteId()}
-                    onSelectFavorite={handleSelectFavorite}
-                  />
-                </div>
-              </Show>
-            </div>
+      {/* When opened in a dedicated tab for backup import and no file selected yet / merge done */}
+      <Show when={isImportBackupTab() && !backupData() && !importBackupDone()}>
+        <div class="flex flex-col items-center justify-center w-full h-full gap-4">
+          <h2 class="text-xl font-semibold text-gray-700">
+            Import Backup File
+          </h2>
+          <p class="text-sm text-gray-500">
+            Select a backup JSON file to import your bookmarks.
+          </p>
+          <button
+            type="button"
+            onClick={openBackupFilePicker}
+            class="btn btn-primary"
+          >
+            <span class="text-sm">📂</span>
+            Choose Backup File
+          </button>
+        </div>
+      </Show>
 
-            {/* Right panel that shows bookmarks and buttons */}
-            <div class="flex flex-col flex-1 p-5 w-full h-full">
-              <div class="flex flex-row mb-5 justify-evenly items-center">
-                <AddCollectionButton onAddCollection={addNewCollection} />
-                <ImportTabButton
-                  selectedCollectionId={selectedCollectionId()}
-                  selectedFavoriteId={selectedFavoriteId()}
-                  onImportTab={importCurrentTab}
-                  onImportTabToFavorite={importCurrentTab}
-                  activeTab={activeTab()}
+      {/* Success state after merge in dedicated import tab */}
+      <Show when={isImportBackupTab() && importBackupDone()}>
+        <div class="flex flex-col items-center justify-center w-full h-full gap-4">
+          <span class="text-4xl">✅</span>
+          <h2 class="text-xl font-semibold text-gray-700">
+            Backup Imported Successfully!
+          </h2>
+          <p class="text-sm text-gray-500">
+            Your bookmarks have been merged. You can close this tab.
+          </p>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                // Close this tab
+                browser.tabs.getCurrent().then((tab) => {
+                  if (tab?.id) browser.tabs.remove(tab.id);
+                });
+              }}
+              class="btn btn-primary"
+            >
+              Close Tab
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setImportBackupDone(false);
+                openBackupFilePicker();
+              }}
+              class="btn btn-secondary"
+            >
+              Import Another File
+            </button>
+          </div>
+        </div>
+      </Show>
+
+      <Show when={!isImportBackupTab()}>
+        <Switch fallback={<div>Getting bookmarks</div>}>
+          <Match when={fetchDataState().status === "success"}>
+            <div class="flex w-full h-full">
+              <div class="tabs tabs-lift flex w-[300px]">
+                {/* Sidebar Content */}
+                {/* Tab Navigation for Sidebar */}
+                <input
+                  type="radio"
+                  class="tab"
+                  aria-label="Collections"
+                  checked={activeTab() === "collections"}
+                  onClick={() => setActiveTab("collections")}
                 />
-                <div class="dropdown dropdown-bottom dropdown-end">
-                  <button tabIndex={0} class="btn btn-ghost m-1">
-                    <img
-                      src="/assets/horizontal-dots.svg"
-                      alt="Extra Options"
+                <Show when={activeTab() === "collections"}>
+                  <div class="tab-content bg-base-100 border-base-300">
+                    <Collections
+                      collections={collections()}
+                      selectedCollectionId={selectedCollectionId()}
+                      onSelectCollection={handleSelectCollection}
+                      onDeleteCollection={handleDeleteCollection}
+                      path={[]}
+                      setCurrentExpandedCollections={
+                        setCurrentExpandedCollections
+                      }
+                      currentExpandedCollections={currentExpandedCollections()}
                     />
-                  </button>
-                  <div
-                    tabIndex={0}
-                    class="dropdown-content card card-sm bg-base-100 z-1 w-64 shadow-md flex flex-col gap-2 p-2"
-                  >
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        await exportBackup();
-                      }}
-                      class="btn btn-primary"
-                    >
-                      <span class="text-sm">💾</span>
-                      Export Backup
-                    </button>
-                    <button
-                      onClick={() => setBrowserBookmarksOpen(true)}
-                      class="btn btn-secondary"
-                    >
-                      <span class="text-sm">🔖</span>
-                      Import Browser Bookmarks
-                    </button>
                   </div>
-                </div>
+                </Show>
+
+                <input
+                  type="radio"
+                  class="tab"
+                  aria-label="Favorites"
+                  checked={activeTab() === "favorites"}
+                  onClick={() => setActiveTab("favorites")}
+                />
+                <Show when={activeTab() === "favorites"}>
+                  <div class="tab-content bg-base-100 border-base-300">
+                    <Favorites
+                      favorites={mostRecentlyUpdatedCollections()}
+                      selectedFavoriteId={selectedFavoriteId()}
+                      onSelectFavorite={handleSelectFavorite}
+                    />
+                  </div>
+                </Show>
               </div>
 
-              <CollectionBookmarksComponent
-                collection={collectionBookmarks()}
-                handleDeleteBookmark={handleDeleteBookmark}
-              />
+              {/* Right panel that shows bookmarks and buttons */}
+              <div class="flex flex-col flex-1 p-5 w-full h-full">
+                <div class="flex flex-row mb-5 justify-evenly items-center">
+                  <AddCollectionButton onAddCollection={addNewCollection} />
+                  <ImportTabButton
+                    selectedCollectionId={selectedCollectionId()}
+                    selectedFavoriteId={selectedFavoriteId()}
+                    onImportTab={importCurrentTab}
+                    onImportTabToFavorite={importCurrentTab}
+                    activeTab={activeTab()}
+                  />
+                  <div class="dropdown dropdown-bottom dropdown-end">
+                    <button tabIndex={0} class="btn btn-ghost m-1">
+                      <img
+                        src="/assets/horizontal-dots.svg"
+                        alt="Extra Options"
+                      />
+                    </button>
+                    <div
+                      tabIndex={0}
+                      class="dropdown-content card card-sm bg-base-100 z-1 w-64 shadow-md flex flex-col gap-2 p-2"
+                    >
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await exportBackup();
+                        }}
+                        class="btn btn-primary"
+                      >
+                        <span class="text-sm">💾</span>
+                        Export Backup
+                      </button>
+                      <button
+                        onClick={() => setBrowserBookmarksOpen(true)}
+                        class="btn btn-secondary"
+                      >
+                        <span class="text-sm">🔖</span>
+                        Import Browser Bookmarks
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Open the extension in a new tab with importBackup flag
+                          // because the popup closes when a file dialog opens
+                          const extensionUrl = browser.runtime.getURL(
+                            "index.html?importBackup=true",
+                          );
+                          browser.tabs.create({ url: extensionUrl });
+                        }}
+                        class="btn btn-secondary"
+                      >
+                        <span class="text-sm">📂</span>
+                        Import Backup File
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <CollectionBookmarksComponent
+                  collection={collectionBookmarks()}
+                  handleDeleteBookmark={handleDeleteBookmark}
+                />
+              </div>
             </div>
-          </div>
-        </Match>
-        <Match when={fetchDataState().status === "error"}>
-          <h1>Error fetching bookmarks</h1>
-        </Match>
-        <Match when={fetchDataState().status === "pending"}>
-          <h1>Loading bookmarks...</h1>
-        </Match>
-      </Switch>
+          </Match>
+          <Match when={fetchDataState().status === "error"}>
+            <h1>Error fetching bookmarks</h1>
+          </Match>
+          <Match when={fetchDataState().status === "pending"}>
+            <h1>Loading bookmarks...</h1>
+          </Match>
+        </Switch>
+      </Show>
       <ErrorToast />
       <Show when={browserBookmarksOpen()}>
         <BrowserBookmarks
@@ -753,6 +875,15 @@ export default function App() {
             }
           }}
         />
+      </Show>
+      <Show when={backupData()} keyed>
+        {(data) => (
+          <BackupBookmarks
+            onClose={() => setBackupData(null)}
+            backupData={data}
+            onMergeBackup={mergeBackupData}
+          />
+        )}
       </Show>
     </div>
   );
