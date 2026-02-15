@@ -21,6 +21,8 @@ import ErrorToast, { showErrorToast } from "./components/ErrorToast";
 import Favorites from "./components/Favorites";
 import ImportTabButton from "./components/ImportTabButton";
 import { generateId } from "./utils";
+import { ImportBackupView } from "./components/ImportBackup/ImportBackupView";
+import { ImportBackupSuccessView } from "./components/ImportBackup/ImportBackupSuccessView";
 
 interface CollectionFetchState {
   status: "pending" | "success" | "error";
@@ -568,59 +570,15 @@ export default function App() {
 
       {/* When opened in a dedicated tab for backup import and no file selected yet / merge done */}
       <Show when={isImportBackupTab() && !backupData() && !importBackupDone()}>
-        <div class="flex flex-col items-center justify-center w-full h-full gap-4">
-          <h2 class="text-xl font-semibold text-gray-700">
-            Import Backup File
-          </h2>
-          <p class="text-sm text-gray-500">
-            Select a backup JSON file to import your bookmarks.
-          </p>
-          <button
-            type="button"
-            onClick={openBackupFilePicker}
-            class="btn btn-primary"
-          >
-            <span class="text-sm">📂</span>
-            Choose Backup File
-          </button>
-        </div>
+        <ImportBackupView openBackupFilePicker={openBackupFilePicker} />
       </Show>
 
       {/* Success state after merge in dedicated import tab */}
       <Show when={isImportBackupTab() && importBackupDone()}>
-        <div class="flex flex-col items-center justify-center w-full h-full gap-4">
-          <span class="text-4xl">✅</span>
-          <h2 class="text-xl font-semibold text-gray-700">
-            Backup Imported Successfully!
-          </h2>
-          <p class="text-sm text-gray-500">
-            Your bookmarks have been merged. You can close this tab.
-          </p>
-          <div class="flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                // Close this tab
-                browser.tabs.getCurrent().then((tab) => {
-                  if (tab?.id) browser.tabs.remove(tab.id);
-                });
-              }}
-              class="btn btn-primary"
-            >
-              Close Tab
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setImportBackupDone(false);
-                openBackupFilePicker();
-              }}
-              class="btn btn-secondary"
-            >
-              Import Another File
-            </button>
-          </div>
-        </div>
+        <ImportBackupSuccessView
+          setImportBackupDone={setImportBackupDone}
+          openBackupFilePicker={openBackupFilePicker}
+        />
       </Show>
 
       <Show when={!isImportBackupTab()}>
