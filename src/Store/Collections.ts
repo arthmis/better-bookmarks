@@ -260,6 +260,13 @@ export function handleEvent(
             collectionId: store.selectedCollectionId,
           },
         };
+      } else if (store.selectedFavoriteId) {
+        return {
+          type: "IMPORT_CURRENT_TABS",
+          payload: {
+            collectionId: store.selectedFavoriteId,
+          },
+        };
       }
       break;
     case "IMPORT_TABS": {
@@ -385,6 +392,25 @@ export function handleEvent(
     case "SET_ACTIVE_TAB": {
       const { activeTab } = event.payload;
       setStore("activeTab", activeTab);
+
+      break;
+    }
+    case "SELECT_FAVORITE": {
+      const { favoriteId } = event.payload;
+      setStore("selectedFavoriteId", favoriteId);
+      setStore("selectedCollectionId", undefined);
+
+      // Find and display the favorite collection's bookmarks
+      const selectedCollection = findCollectionById(
+        store.collections,
+        favoriteId,
+      );
+      if (selectedCollection) {
+        setStore("collectionBookmarks", {
+          title: selectedCollection.name,
+          bookmarks: selectedCollection.items,
+        });
+      }
 
       break;
     }

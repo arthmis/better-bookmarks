@@ -60,6 +60,13 @@ export type SET_ACTIVE_TAB = {
   };
 };
 
+export type SELECT_FAVORITE = {
+  type: "SELECT_FAVORITE";
+  payload: {
+    favoriteId: string;
+  };
+};
+
 export type AppEvent =
   | INSERT_COLLECTION
   | SELECT_COLLECTION
@@ -68,4 +75,5 @@ export type AppEvent =
   | IMPORT_TABS
   | LOAD_APP_STATE
   | INITIALIZE_APP_STATE
-  | SET_ACTIVE_TAB;
+  | SET_ACTIVE_TAB
+  | SELECT_FAVORITE;
