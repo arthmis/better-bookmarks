@@ -5,4 +5,11 @@ export type SET_COLLECTIONS = {
   payload: Collection[];
 };
 
-export type Effect = SET_COLLECTIONS;
+export type IMPORT_CURRENT_TABS = {
+  type: "IMPORT_CURRENT_TABS";
+  payload: {
+    collectionId: string;
+  };
+};
+
+export type Effect = SET_COLLECTIONS | IMPORT_CURRENT_TABS;

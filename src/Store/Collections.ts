@@ -250,6 +250,114 @@ export function handleEvent(
       }
       break;
     }
+    case "GET_CURRENT_TABS":
+      if (store.selectedCollectionId) {
+        return {
+          type: "IMPORT_CURRENT_TABS",
+          payload: {
+            collectionId: store.selectedCollectionId,
+          },
+        };
+      }
+      break;
+    case "IMPORT_TABS": {
+      const { tabs, collectionId } = event.payload;
+      if (!tabs) {
+        return undefined;
+      }
+
+      // Get the selected collection to check for duplicate URLs
+      const selectedCollection = findCollectionById(
+        store.collections,
+        collectionId,
+      );
+      if (!selectedCollection) {
+        // showErrorToast("Selected collection not found");
+        return;
+      }
+
+      // Get existing URLs in the selected collection
+      const existingUrls = new Set(
+        selectedCollection.items.map((item) => normalizeUrl(item.url)),
+      );
+
+      const importedBookmarks: CollectionBookmark[] = tabs
+        .filter((tab) => {
+          const tabUrl = tab.url || "";
+          if (!tabUrl) {
+            return false;
+          }
+
+          const normalizedTabUrl = normalizeUrl(tabUrl);
+          return !existingUrls.has(normalizedTabUrl);
+        })
+        .map((tab) => {
+          // Create a better title by getting the page title
+          const title = tab.title || "";
+          const url = tab.url || "";
+          const iconUrl = tab.favIconUrl || undefined;
+
+          return {
+            id: crypto.randomUUID(),
+            title,
+            url,
+            iconUrl,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+        });
+
+      // If no bookmarks to add (all were duplicates), don't update storage
+      if (importedBookmarks.length === 0) {
+        return;
+      }
+
+      // Find and update the selected collection
+      const updateCollections = (collections: Collection[]): Collection[] => {
+        return collections.map((collection) => {
+          if (collection.id === collectionId) {
+            const newCollection = {
+              ...collection,
+              items: [...collection.items, ...importedBookmarks],
+            };
+            // if these items are in view update the list of bookmarks
+            setStore("collectionBookmarks", {
+              title: newCollection.name,
+              bookmarks: newCollection.items,
+            });
+
+            // Update most recently updated collections
+            // updateMostRecentlyUpdatedCollections({
+            //   id: collectionId,
+            //   name: collection.name,
+            // });
+
+            return newCollection;
+          }
+          return {
+            ...collection,
+            subcollections: updateCollections(collection.subcollections),
+          };
+        });
+      };
+
+      try {
+        const updatedCollection = updateCollections(store.collections);
+        setStore("collections", updatedCollection);
+        return {
+          type: "SET_COLLECTIONS",
+          payload: updatedCollection,
+        };
+        // await autoExportBackup();
+      } catch (error) {
+        console.error("Failed to add bookmark to collection:", error);
+        // showErrorToast(
+        //   "Failed to add bookmark to collection. Please try again.",
+        // );
+      }
+
+      break;
+    }
   }
   return undefined;
 }
@@ -258,20 +366,8 @@ async function handleEffect(
   effect: Effect,
   storeInstance?: ReturnType<typeof createStateStore>,
 ): Promise<void> {
-  const store = storeInstance ?? bookmarksStore;
+  const store = storeInstance ?? { bookmarksStore, setBookmarksStore };
   switch (effect.type) {
-    case "SET_CURRENT_EXPANDED_COLLECTIONS":
-      setBookmarksStore({
-        ...store,
-        currentExpandedCollections: effect.payload,
-      });
-      break;
-    case "SET_SELECTED_COLLECTION":
-      setBookmarksStore({
-        ...store,
-        selectedCollectionId: effect.payload,
-      });
-      break;
     case "SET_COLLECTIONS": {
       const { payload: collections } = effect;
       try {
@@ -279,6 +375,34 @@ async function handleEffect(
       } catch (error) {
         // todo send the error to state
         console.error("Failed to set collections:", error);
+      }
+      break;
+    }
+    case "IMPORT_CURRENT_TABS": {
+      // Check if we're in an extension context
+      const tabs = await browser.tabs.query({
+        currentWindow: true,
+        highlighted: true,
+      });
+
+      const setCollectionsEffect = handleEvent(
+        {
+          type: "IMPORT_TABS",
+          payload: {
+            tabs,
+            collectionId: effect.payload.collectionId,
+          },
+        },
+        store,
+      );
+
+      if (
+        setCollectionsEffect &&
+        setCollectionsEffect.type === "SET_COLLECTIONS"
+      ) {
+        await browser.storage.local.set({
+          collections: setCollectionsEffect.payload,
+        });
       }
       break;
     }

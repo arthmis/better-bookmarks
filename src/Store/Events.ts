@@ -8,6 +8,18 @@ export type INSERT_COLLECTION = {
   };
 };
 
+export type GET_CURRENT_TABS = {
+  type: "GET_CURRENT_TABS";
+};
+
+export type IMPORT_TABS = {
+  type: "IMPORT_TABS";
+  payload: {
+    tabs: browser.tabs.Tab[];
+    collectionId: string;
+  };
+};
+
 export type SELECT_COLLECTION = {
   type: "SELECT_COLLECTION";
   payload: {
@@ -23,4 +35,9 @@ export type DELETE_BOOKMARK = {
   };
 };
 
-export type AppEvent = INSERT_COLLECTION | SELECT_COLLECTION | DELETE_BOOKMARK;
+export type AppEvent =
+  | INSERT_COLLECTION
+  | SELECT_COLLECTION
+  | DELETE_BOOKMARK
+  | GET_CURRENT_TABS
+  | IMPORT_TABS;
