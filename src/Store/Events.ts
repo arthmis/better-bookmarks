@@ -1,6 +1,7 @@
 import { Favorite } from "../components/Favorites";
 import { Collection } from "../components/StateStore";
 import { CollectionFetchState } from "./Collections";
+import type { ActiveTab } from "./Collections";
 
 export type INSERT_COLLECTION = {
   type: "INSERT_COLLECTION";
@@ -52,6 +53,13 @@ export type INITIALIZE_APP_STATE = {
   };
 };
 
+export type SET_ACTIVE_TAB = {
+  type: "SET_ACTIVE_TAB";
+  payload: {
+    activeTab: ActiveTab;
+  };
+};
+
 export type AppEvent =
   | INSERT_COLLECTION
   | SELECT_COLLECTION
@@ -59,4 +67,5 @@ export type AppEvent =
   | GET_CURRENT_TABS
   | IMPORT_TABS
   | LOAD_APP_STATE
-  | INITIALIZE_APP_STATE;
+  | INITIALIZE_APP_STATE
+  | SET_ACTIVE_TAB;

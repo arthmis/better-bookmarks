@@ -23,7 +23,7 @@ export interface AppState {
   collections: Collection[];
   selectedCollectionId: string | undefined;
   selectedFavoriteId: string | undefined;
-  activeTab: "collections" | "favorites";
+  activeTab: ActiveTab;
   collectionBookmarks: CollectionBookmarks;
   fetchDataState: CollectionFetchState;
   currentExpandedCollections: string[];
@@ -34,6 +34,8 @@ export interface AppState {
   backupFileInputRef: HTMLInputElement | undefined;
   mostRecentlyUpdatedCollections: Favorite[];
 }
+
+export type ActiveTab = "collections" | "favorites";
 
 export function createStateStore(initialState?: AppState) {
   const storeState: AppState = {
@@ -380,6 +382,12 @@ export function handleEvent(
       setStore("fetchDataState", fetchState);
       break;
     }
+    case "SET_ACTIVE_TAB": {
+      const { activeTab } = event.payload;
+      setStore("activeTab", activeTab);
+
+      break;
+    }
   }
   return undefined;
 }
@@ -641,3 +649,5 @@ const updateMostRecentlyUpdatedCollections = (
   const updated = [collection, ...filtered].slice(0, 15);
   return updated;
 };
+
+export { bookmarksStore };
