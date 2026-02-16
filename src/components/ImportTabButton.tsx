@@ -1,11 +1,10 @@
-import { Collection } from "./StateStore";
+import { ActiveTab, dispatch } from "../Store/Collections";
 
 interface ImportTabButtonProps {
   selectedCollectionId?: string;
   selectedFavoriteId?: string;
-  onImportTab: () => Promise<void>;
   onImportTabToFavorite: () => Promise<void>;
-  activeTab: "collections" | "favorites";
+  activeTab: ActiveTab;
 }
 
 export default function ImportTabButton(props: ImportTabButtonProps) {
@@ -17,19 +16,14 @@ export default function ImportTabButton(props: ImportTabButtonProps) {
     }
   };
 
-  const handleImportTab = async () => {
-    if (!isDisabled()) {
-      if (props.activeTab === "collections") {
-        await props.onImportTab();
-      } else {
-        await props.onImportTabToFavorite();
-      }
-    }
-  };
-
   return (
     <button
-      onClick={handleImportTab}
+      type="button"
+      onClick={() => {
+        dispatch({
+          type: "GET_CURRENT_TABS",
+        });
+      }}
       disabled={isDisabled()}
       class="btn btn-primary"
     >

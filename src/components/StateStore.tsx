@@ -1,6 +1,7 @@
 import { createSignal, For, Show } from "solid-js";
 import type { CollectionBookmark } from "./CollectionBookmarks";
 import DeleteCollectionModal from "./DeleteCollectionModal";
+import { dispatch } from "../Store/Collections";
 
 interface BackupCollection {
   id: string;
@@ -32,10 +33,6 @@ interface Collection {
 interface CollectionItemProps {
   collection: Collection;
   selectedCollectionId?: string;
-  onSelectCollection?: (
-    id: Collection,
-    currentExpandedCollections: string[],
-  ) => void;
   onDeleteCollection?: (id: string, name: string) => void;
   expandedPath: string[];
   setCurrentExpandedCollections: (path: string[]) => void;
@@ -81,7 +78,14 @@ function CollectionItem(props: CollectionItemProps) {
         }}
         onClick={(e) => {
           e.stopPropagation();
-          props.onSelectCollection?.(props.collection, props.expandedPath);
+          dispatch({
+            type: "SELECT_COLLECTION",
+            payload: {
+              collectionId: props.collection.id,
+              currentExpandedCollections: props.expandedPath,
+            },
+          });
+          // props.onSelectCollection?.(props.collection, props.expandedPath);
         }}
       >
         <span
@@ -138,7 +142,6 @@ function CollectionItem(props: CollectionItemProps) {
                     <CollectionItem
                       collection={subcollection}
                       selectedCollectionId={props.selectedCollectionId}
-                      onSelectCollection={props.onSelectCollection}
                       onDeleteCollection={props.onDeleteCollection}
                       expandedPath={[...props.expandedPath, subcollection.id]}
                       setCurrentExpandedCollections={
@@ -167,7 +170,6 @@ interface CollectionsProps {
   ) => void;
   onDeleteCollection?: (id: string) => void;
   collections: Collection[];
-  onAddCollection?: (name: string) => void;
   path: string[];
   setCurrentExpandedCollections: (path: string[]) => void;
   currentExpandedCollections: string[];
@@ -210,7 +212,6 @@ export default function Collections(props: CollectionsProps) {
               <CollectionItem
                 collection={collection}
                 selectedCollectionId={props.selectedCollectionId}
-                onSelectCollection={props.onSelectCollection}
                 onDeleteCollection={handleDeleteClick}
                 expandedPath={[...props.path, collection.id]}
                 setCurrentExpandedCollections={

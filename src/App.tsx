@@ -1,12 +1,5 @@
 import { createSignal, Match, onMount, Show, Switch } from "solid-js";
 import type { BackgroundScriptResponse } from "./background_script_types";
-import {
-  CollectionFetchState,
-  findCollectionById,
-  mapBackupDatesToJavascriptDate,
-  mergeCollections,
-  normalizeUrl,
-} from "./Store/Collections";
 import AddCollectionButton from "./components/AddCollectionButton";
 import BackupBookmarks, {
   type BackupData,
@@ -17,13 +10,20 @@ import CollectionBookmarksComponent, {
   type CollectionBookmark,
   type CollectionBookmarks,
 } from "./components/CollectionBookmarks";
-import Collections, { type Collection } from "./components/StateStore";
 import ErrorToast, { showErrorToast } from "./components/ErrorToast";
-import Favorites, { Favorite } from "./components/Favorites";
-import ImportTabButton from "./components/ImportTabButton";
-import { generateId } from "./utils";
-import { ImportBackupView } from "./components/ImportBackup/ImportBackupView";
+import Favorites, { type Favorite } from "./components/Favorites";
 import { ImportBackupSuccessView } from "./components/ImportBackup/ImportBackupSuccessView";
+import { ImportBackupView } from "./components/ImportBackup/ImportBackupView";
+import ImportTabButton from "./components/ImportTabButton";
+import Collections, { type Collection } from "./components/StateStore";
+import {
+  bookmarksStore,
+  dispatch,
+  findCollectionById,
+  mapBackupDatesToJavascriptDate,
+  mergeCollections,
+  normalizeUrl,
+} from "./Store/Collections";
 
 export default function App() {
   const [selectedCollectionId, setSelectedCollectionId] = createSignal<
@@ -32,9 +32,6 @@ export default function App() {
   const [selectedFavoriteId, setSelectedFavoriteId] = createSignal<
     string | undefined
   >();
-  const [activeTab, setActiveTab] = createSignal<"collections" | "favorites">(
-    "collections",
-  );
 
   const [collectionBookmarks, setBookmarkItems] =
     createSignal<CollectionBookmarks>({
@@ -42,11 +39,6 @@ export default function App() {
       bookmarks: [],
     });
 
-  const [fetchDataState, setFetchDataState] =
-    createSignal<CollectionFetchState>({
-      status: "pending",
-      error: undefined,
-    });
   const [collections, setCollections] = createSignal<Collection[]>([]);
   const [currentExpandedCollections, setCurrentExpandedCollections] =
     createSignal<string[]>([]);
@@ -73,93 +65,9 @@ export default function App() {
     }
   });
 
-  browser.storage.local
-    .get(["collections", "mostRecentlyUpdatedCollections"])
-    .then((data) => {
-      setCollections(data.collections || []);
-      setMostRecentlyUpdatedCollections(
-        data.mostRecentlyUpdatedCollections || [],
-      );
-      setFetchDataState({ status: "success" });
-    })
-    .catch(() => {
-      setFetchDataState({
-        status: "error",
-        error: new Error("Failed to fetch collections"),
-      });
-    });
+  dispatch({ type: "LOAD_APP_STATE" });
 
   // Function to merge browser bookmarks with existing collections
-
-  const addNewCollection = async (name: string) => {
-    const normalizedName = name.trim().toLowerCase();
-
-    // Check for duplicates
-    const isDuplicate = (collectionsToCheck: Collection[]): boolean => {
-      return collectionsToCheck.some(
-        (collection) => collection.name.trim().toLowerCase() === normalizedName,
-      );
-    };
-
-    if (selectedCollectionId() === undefined) {
-      // Check top-level collections for duplicates
-      if (isDuplicate(collections())) {
-        return; // Don't add duplicate
-      }
-    } else {
-      // Check subcollections of selected collection for duplicates
-      const selectedCollection = findCollectionById(
-        collections(),
-        selectedCollectionId(),
-      );
-      if (
-        selectedCollection &&
-        isDuplicate(selectedCollection.subcollections)
-      ) {
-        return; // Don't add duplicate
-      }
-    }
-
-    const newCollection: Collection = {
-      id: generateId(),
-      name: name,
-      items: [],
-      subcollections: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    if (selectedCollectionId() === undefined) {
-      try {
-        await updateAndStoreCollections([...collections(), newCollection]);
-      } catch (error) {
-        console.error(error);
-        showErrorToast("Failed to add or update collection. Please try again.");
-      }
-    }
-
-    const updateCollections = (collections: Collection[]): Collection[] => {
-      return collections.map((collection) => {
-        if (collection.id === selectedCollectionId()) {
-          return {
-            ...collection,
-            subcollections: [...collection.subcollections, newCollection],
-          };
-        }
-        return {
-          ...collection,
-          subcollections: updateCollections(collection.subcollections),
-        };
-      });
-    };
-
-    try {
-      await updateAndStoreCollections(updateCollections(collections()));
-    } catch (error) {
-      console.error("Failed to add or update collection:", error);
-      showErrorToast("Failed to add or update collection. Please try again.");
-    }
-  };
 
   const updateMostRecentlyUpdatedCollections = (collection: Favorite) => {
     const current = mostRecentlyUpdatedCollections();
@@ -197,7 +105,7 @@ export default function App() {
 
   const importCurrentTab = async () => {
     const selectedId =
-      activeTab() === "collections"
+      bookmarksStore.activeTab === "collections"
         ? selectedCollectionId()
         : selectedFavoriteId();
     if (!selectedId) {
@@ -379,45 +287,6 @@ export default function App() {
     }
   };
 
-  const handleSelectCollection = (
-    collection: Collection,
-    currentExpandedCollections: string[],
-  ) => {
-    // Toggle selection - if same collection is clicked, deselect it
-    if (selectedCollectionId() === collection.id) {
-      setSelectedCollectionId(undefined);
-      setBookmarkItems({
-        title: "",
-        bookmarks: [],
-      });
-      const idIndex = currentExpandedCollections.indexOf(collection.id);
-      setCurrentExpandedCollections(
-        currentExpandedCollections.toSpliced(idIndex),
-      );
-    } else {
-      setSelectedCollectionId(collection.id);
-      // Clear favorite selection when selecting collection
-      setSelectedFavoriteId(undefined);
-      const selectedCollection = findCollectionById(
-        collections(),
-        selectedCollectionId()!,
-      );
-      if (selectedCollection) {
-        setBookmarkItems({
-          title: selectedCollection.name,
-          bookmarks: selectedCollection.items,
-        });
-        setCurrentExpandedCollections(currentExpandedCollections);
-      } else {
-        setBookmarkItems({
-          title: "",
-          bookmarks: [],
-        });
-      }
-      console.log(collectionBookmarks());
-    }
-  };
-
   const exportBackup = async () => {
     try {
       const data = {
@@ -573,7 +442,7 @@ export default function App() {
 
       <Show when={!isImportBackupTab()}>
         <Switch fallback={<div>Getting bookmarks</div>}>
-          <Match when={fetchDataState().status === "success"}>
+          <Match when={bookmarksStore.fetchDataState.status === "success"}>
             <div class="flex w-full h-full">
               <div class="tabs tabs-lift flex w-[300px]">
                 {/* Sidebar Content */}
@@ -582,21 +451,27 @@ export default function App() {
                   type="radio"
                   class="tab"
                   aria-label="Collections"
-                  checked={activeTab() === "collections"}
-                  onClick={() => setActiveTab("collections")}
+                  checked={bookmarksStore.activeTab === "collections"}
+                  onClick={() =>
+                    dispatch({
+                      type: "SET_ACTIVE_TAB",
+                      payload: { activeTab: "collections" },
+                    })
+                  }
                 />
-                <Show when={activeTab() === "collections"}>
+                <Show when={bookmarksStore.activeTab === "collections"}>
                   <div class="tab-content bg-base-100 border-base-300">
                     <Collections
-                      collections={collections()}
-                      selectedCollectionId={selectedCollectionId()}
-                      onSelectCollection={handleSelectCollection}
+                      collections={bookmarksStore.collections}
+                      selectedCollectionId={bookmarksStore.selectedCollectionId}
                       onDeleteCollection={handleDeleteCollection}
                       path={[]}
                       setCurrentExpandedCollections={
                         setCurrentExpandedCollections
                       }
-                      currentExpandedCollections={currentExpandedCollections()}
+                      currentExpandedCollections={
+                        bookmarksStore.currentExpandedCollections
+                      }
                     />
                   </div>
                 </Show>
@@ -605,13 +480,18 @@ export default function App() {
                   type="radio"
                   class="tab"
                   aria-label="Favorites"
-                  checked={activeTab() === "favorites"}
-                  onClick={() => setActiveTab("favorites")}
+                  checked={bookmarksStore.activeTab === "favorites"}
+                  onClick={() =>
+                    dispatch({
+                      type: "SET_ACTIVE_TAB",
+                      payload: { activeTab: "favorites" },
+                    })
+                  }
                 />
-                <Show when={activeTab() === "favorites"}>
+                <Show when={bookmarksStore.activeTab === "favorites"}>
                   <div class="tab-content bg-base-100 border-base-300">
                     <Favorites
-                      favorites={mostRecentlyUpdatedCollections()}
+                      favorites={bookmarksStore.mostRecentlyUpdatedCollections}
                       selectedFavoriteId={selectedFavoriteId()}
                       onSelectFavorite={handleSelectFavorite}
                     />
@@ -622,13 +502,12 @@ export default function App() {
               {/* Right panel that shows bookmarks and buttons */}
               <div class="flex flex-col flex-1 p-5 w-full h-full">
                 <div class="flex flex-row mb-5 justify-evenly items-center">
-                  <AddCollectionButton onAddCollection={addNewCollection} />
+                  <AddCollectionButton />
                   <ImportTabButton
-                    selectedCollectionId={selectedCollectionId()}
+                    selectedCollectionId={bookmarksStore.selectedCollectionId}
                     selectedFavoriteId={selectedFavoriteId()}
-                    onImportTab={importCurrentTab}
                     onImportTabToFavorite={importCurrentTab}
-                    activeTab={activeTab()}
+                    activeTab={bookmarksStore.activeTab}
                   />
                   <div class="dropdown dropdown-bottom dropdown-end">
                     <button type="button" class="btn btn-ghost m-1">
@@ -676,16 +555,16 @@ export default function App() {
                 </div>
 
                 <CollectionBookmarksComponent
-                  collection={collectionBookmarks()}
+                  collection={bookmarksStore.collectionBookmarks}
                   handleDeleteBookmark={handleDeleteBookmark}
                 />
               </div>
             </div>
           </Match>
-          <Match when={fetchDataState().status === "error"}>
+          <Match when={bookmarksStore.fetchDataState.status === "error"}>
             <h1>Error fetching bookmarks</h1>
           </Match>
-          <Match when={fetchDataState().status === "pending"}>
+          <Match when={bookmarksStore.fetchDataState.status === "pending"}>
             <h1>Loading bookmarks...</h1>
           </Match>
         </Switch>
@@ -694,7 +573,7 @@ export default function App() {
       <Show when={browserBookmarksOpen()}>
         <BrowserBookmarks
           onClose={() => setBrowserBookmarksOpen(false)}
-          collections={collections()}
+          collections={bookmarksStore.collections}
           onImportCollections={async (browserCollections: Collection[]) => {
             try {
               const mergedCollections = mergeCollections(
