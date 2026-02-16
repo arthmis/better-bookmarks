@@ -1,6 +1,7 @@
 import { createStore } from "solid-js/store";
 import type {
   BackupData,
+  RestoredBackupData,
   ParsedBackupData,
 } from "../components/BackupBookmarks";
 import type {
@@ -12,6 +13,7 @@ import type { BackupCollection, Collection } from "../components/StateStore";
 import { generateId } from "../utils";
 import type { Effect } from "./Effects";
 import type { AppEvent } from "./Events";
+import { BackgroundScriptResponse } from "../background_script_types";
 
 export interface CollectionFetchState {
   status: "pending" | "success" | "error";
@@ -361,9 +363,15 @@ export function handleEvent(
           payload: {
             collections: updatedCollection,
             favorites: store.mostRecentlyUpdatedCollections,
+            backupData: {
+              collections: store.collections,
+              mostRecentlyUpdatedCollections:
+                store.mostRecentlyUpdatedCollections,
+              exportDate: new Date().toISOString(),
+              version: "1.2.0",
+            },
           },
         };
-        // await autoExportBackup();
       } catch (error) {
         console.error("Failed to add bookmark to collection:", error);
         // showErrorToast(
@@ -459,7 +467,6 @@ export function handleEvent(
       break;
     }
   }
-  return undefined;
 }
 
 async function handleEffect(
@@ -469,7 +476,7 @@ async function handleEffect(
   const store = storeInstance ?? { bookmarksStore, setBookmarksStore };
   switch (effect.type) {
     case "SET_COLLECTIONS": {
-      const { collections, favorites } = effect.payload;
+      const { collections, favorites, backupData } = effect.payload;
       try {
         await browser.storage.local.set({ collections });
 
@@ -485,6 +492,14 @@ async function handleEffect(
       } catch (error) {
         // todo send the error to state
         console.error("Failed to set collections:", error);
+      }
+
+      if (backupData) {
+        try {
+          await exportBackup(backupData);
+        } catch (error) {
+          console.error("Auto-backup failed:", error);
+        }
       }
       break;
     }
@@ -509,19 +524,28 @@ async function handleEffect(
         setCollectionsEffect &&
         setCollectionsEffect.type === "SET_COLLECTIONS"
       ) {
+        const { collections, favorites, backupData } =
+          setCollectionsEffect.payload;
         await browser.storage.local.set({
-          collections: setCollectionsEffect.payload.collections,
+          collections: collections,
         });
 
-        if (setCollectionsEffect.payload.favorites) {
+        if (favorites) {
           await browser.storage.local
             .set({
-              mostRecentlyUpdatedCollections:
-                setCollectionsEffect.payload.favorites,
+              mostRecentlyUpdatedCollections: favorites,
             })
             .catch((err) => {
               console.error(`error storing favorites: ${err}`);
             });
+        }
+
+        if (backupData) {
+          try {
+            await exportBackup(backupData);
+          } catch (error) {
+            console.error("Auto-backup failed:", error);
+          }
         }
       }
       break;
@@ -557,6 +581,38 @@ async function handleEffect(
   }
 }
 
+export async function exportBackup(
+  backupData: BackupData,
+): Promise<BackgroundScriptResponse> {
+  const { collections, mostRecentlyUpdatedCollections, exportDate, version } =
+    backupData;
+  const data = {
+    collections: collections,
+    mostRecentlyUpdatedCollections: mostRecentlyUpdatedCollections,
+    exportDate,
+    version,
+  };
+
+  try {
+    const json = JSON.stringify(data, null, 2);
+    const filename = `better-bookmarks-backup-${new Date().toISOString().split("T")[0]}.json`;
+
+    const response: BackgroundScriptResponse =
+      await browser.runtime.sendMessage({
+        type: "auto-export-backup",
+        payload: { json, filename },
+      });
+
+    if (!response.success) {
+      console.error("Auto-backup failed:", response.error);
+    }
+    return response;
+  } catch (error) {
+    console.error("Auto-backup failed:", error);
+    return Promise.reject({ success: false, error });
+  }
+}
+
 export function dispatch(
   event: AppEvent,
   storeInstance?: ReturnType<typeof createStateStore>,
@@ -568,7 +624,7 @@ export function dispatch(
 }
 
 export function mapBackupDatesToJavascriptDate(
-  backupData: BackupData,
+  backupData: RestoredBackupData,
 ): ParsedBackupData {
   const mapCollections = (backupCollection: BackupCollection): Collection => {
     const collectionBookmarks: CollectionBookmark[] =

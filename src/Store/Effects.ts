@@ -1,3 +1,4 @@
+import { BackupData } from "../components/BackupBookmarks";
 import { Favorite } from "../components/Favorites";
 import type { Collection } from "../components/StateStore";
 
@@ -6,6 +7,7 @@ export type SET_COLLECTIONS = {
   payload: {
     collections: Collection[];
     favorites?: Favorite[];
+    backupData?: BackupData;
   };
 };
 
