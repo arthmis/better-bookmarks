@@ -1,8 +1,12 @@
+import { Favorite } from "../components/Favorites";
 import type { Collection } from "../components/StateStore";
 
 export type SET_COLLECTIONS = {
   type: "SET_COLLECTIONS";
-  payload: Collection[];
+  payload: {
+    collections: Collection[];
+    favorites?: Favorite[];
+  };
 };
 
 export type IMPORT_CURRENT_TABS = {

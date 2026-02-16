@@ -123,7 +123,7 @@ export function handleEvent(
         setStore("collections", [...store.collections, newCollection]);
         return {
           type: "SET_COLLECTIONS",
-          payload: [...store.collections, newCollection],
+          payload: { collections: [...store.collections, newCollection] },
         };
       }
 
@@ -156,7 +156,7 @@ export function handleEvent(
         setStore("collections", updatedCollection);
         return {
           type: "SET_COLLECTIONS",
-          payload: updatedCollection,
+          payload: { collections: updatedCollection },
         };
       } catch (error) {
         console.error("Failed to add or update collection:", error);
@@ -242,7 +242,7 @@ export function handleEvent(
         setStore("collections", updatedCollection);
         return {
           type: "SET_COLLECTIONS",
-          payload: updatedCollection,
+          payload: { collections: updatedCollection },
         };
       } catch (error) {
         console.error("Failed to delete bookmark:", error);
@@ -326,11 +326,14 @@ export function handleEvent(
               bookmarks: newCollection.items,
             });
 
-            // Update most recently updated collections
-            // updateMostRecentlyUpdatedCollections({
-            //   id: collectionId,
-            //   name: collection.name,
-            // });
+            const updatedFavorites = updateMostRecentlyUpdatedCollections(
+              {
+                id: collectionId,
+                name: collection.name,
+              },
+              store.mostRecentlyUpdatedCollections,
+            );
+            setStore("mostRecentlyUpdatedCollections", updatedFavorites);
 
             return newCollection;
           }
@@ -346,7 +349,10 @@ export function handleEvent(
         setStore("collections", updatedCollection);
         return {
           type: "SET_COLLECTIONS",
-          payload: updatedCollection,
+          payload: {
+            collections: updatedCollection,
+            favorites: store.mostRecentlyUpdatedCollections,
+          },
         };
         // await autoExportBackup();
       } catch (error) {
@@ -369,9 +375,19 @@ async function handleEffect(
   const store = storeInstance ?? { bookmarksStore, setBookmarksStore };
   switch (effect.type) {
     case "SET_COLLECTIONS": {
-      const { payload: collections } = effect;
+      const { collections, favorites } = effect.payload;
       try {
         await browser.storage.local.set({ collections });
+
+        if (favorites) {
+          await browser.storage.local
+            .set({
+              mostRecentlyUpdatedCollections: favorites,
+            })
+            .catch((err) => {
+              console.error(`error storing favorites: ${err}`);
+            });
+        }
       } catch (error) {
         // todo send the error to state
         console.error("Failed to set collections:", error);
@@ -379,7 +395,6 @@ async function handleEffect(
       break;
     }
     case "IMPORT_CURRENT_TABS": {
-      // Check if we're in an extension context
       const tabs = await browser.tabs.query({
         currentWindow: true,
         highlighted: true,
@@ -401,8 +416,19 @@ async function handleEffect(
         setCollectionsEffect.type === "SET_COLLECTIONS"
       ) {
         await browser.storage.local.set({
-          collections: setCollectionsEffect.payload,
+          collections: setCollectionsEffect.payload.collections,
         });
+
+        if (setCollectionsEffect.payload.favorites) {
+          await browser.storage.local
+            .set({
+              mostRecentlyUpdatedCollections:
+                setCollectionsEffect.payload.favorites,
+            })
+            .catch((err) => {
+              console.error(`error storing favorites: ${err}`);
+            });
+        }
       }
       break;
     }
@@ -561,4 +587,13 @@ export const normalizeUrl = (url: string): string => {
     // If URL parsing fails, return original URL for comparison
     return url.toLowerCase();
   }
+};
+
+const updateMostRecentlyUpdatedCollections = (
+  collection: Favorite,
+  favorites: Favorite[],
+): Favorite[] => {
+  const filtered = favorites.filter(({ id }) => id !== collection.id);
+  const updated = [collection, ...filtered].slice(0, 15);
+  return updated;
 };
