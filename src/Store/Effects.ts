@@ -5,9 +5,9 @@ import type { Collection } from "../components/StateStore";
 import {
   bookmarksStore,
   type createStateStore,
-  handleEvent,
   setBookmarksStore,
 } from "./Collections";
+import { handleEvent } from "./Events";
 
 export type SET_COLLECTIONS = {
   type: "SET_COLLECTIONS";
