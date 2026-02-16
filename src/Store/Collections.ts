@@ -414,6 +414,50 @@ export function handleEvent(
 
       break;
     }
+    case "DELETE_COLLECTION": {
+      const { collectionId } = event.payload;
+
+      const removeCollection = (collections: Collection[]): Collection[] =>
+        collections
+          .filter((collection) => collection.id !== collectionId)
+          .map((collection) => ({
+            ...collection,
+            subcollections: removeCollection(collection.subcollections),
+          }));
+
+      try {
+        const updatedCollections = removeCollection(store.collections);
+        setStore("collections", updatedCollections);
+
+        // If the deleted collection was selected, clear the selection
+        if (store.selectedCollectionId === collectionId) {
+          setStore("selectedCollectionId", undefined);
+          setStore("collectionBookmarks", {
+            title: "",
+            bookmarks: [],
+          });
+
+          // Remove the deleted collection from expanded collections but keep ancestors
+          const idIndex =
+            store.currentExpandedCollections.indexOf(collectionId);
+          setStore(
+            "currentExpandedCollections",
+            store.currentExpandedCollections.toSpliced(idIndex),
+          );
+
+          return {
+            type: "SET_COLLECTIONS",
+            payload: {
+              collections: updatedCollections,
+            },
+          };
+        }
+      } catch (error) {
+        console.error(error);
+        // showErrorToast("Failed to delete collection. Please try again.");
+      }
+      break;
+    }
   }
   return undefined;
 }

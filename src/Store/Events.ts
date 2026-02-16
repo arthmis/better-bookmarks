@@ -67,6 +67,13 @@ export type SELECT_FAVORITE = {
   };
 };
 
+export type DELETE_COLLECTION = {
+  type: "DELETE_COLLECTION";
+  payload: {
+    collectionId: string;
+  };
+};
+
 export type AppEvent =
   | INSERT_COLLECTION
   | SELECT_COLLECTION
@@ -76,4 +83,5 @@ export type AppEvent =
   | LOAD_APP_STATE
   | INITIALIZE_APP_STATE
   | SET_ACTIVE_TAB
-  | SELECT_FAVORITE;
+  | SELECT_FAVORITE
+  | DELETE_COLLECTION;
