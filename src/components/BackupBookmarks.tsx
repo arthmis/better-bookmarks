@@ -2,10 +2,10 @@ import { createSignal, For, Show } from "solid-js";
 import type { BackupCollection, Collection } from "./StateStore";
 import type { CollectionBookmark } from "./CollectionBookmarks";
 import { Favorite } from "./Favorites";
+import { dispatch } from "../Store/Collections";
 
 interface BackupData {
   collections: Collection[];
-  mostRecentlyUpdatedCollections?: Favorite[];
   exportDate?: string;
   version?: string;
 }
@@ -24,9 +24,7 @@ interface ParsedBackupData {
 }
 
 interface BackupBookmarksProps {
-  onClose: () => void;
   backupData: ParsedBackupData;
-  onMergeBackup: (backupData: ParsedBackupData) => Promise<void>;
 }
 
 export default function BackupBookmarks(props: BackupBookmarksProps) {
@@ -140,7 +138,12 @@ export default function BackupBookmarks(props: BackupBookmarksProps) {
   const handleMerge = async () => {
     setMerging(true);
     try {
-      await props.onMergeBackup(props.backupData);
+      dispatch({
+        type: "RESTORE_BACKUP",
+        payload: {
+          backupData: props.backupData,
+        },
+      });
     } catch (error) {
       console.error("Failed to merge backup:", error);
     } finally {
@@ -158,7 +161,14 @@ export default function BackupBookmarks(props: BackupBookmarksProps) {
           </h2>
           <button
             type="button"
-            onClick={props.onClose}
+            onClick={() => {
+              dispatch({
+                type: "SET_BACKUP_DATA",
+                payload: {
+                  backupData: undefined,
+                },
+              });
+            }}
             class="btn btn-ghost btn-sm btn-circle"
             aria-label="Close"
           >
@@ -205,7 +215,18 @@ export default function BackupBookmarks(props: BackupBookmarksProps) {
 
         {/* Footer */}
         <div class="p-4 border-t border-gray-300 flex justify-between">
-          <button type="button" onClick={props.onClose} class="btn btn-primary">
+          <button
+            type="button"
+            onClick={() => {
+              dispatch({
+                type: "SET_BACKUP_DATA",
+                payload: {
+                  backupData: undefined,
+                },
+              });
+            }}
+            class="btn btn-primary"
+          >
             Cancel
           </button>
           <button

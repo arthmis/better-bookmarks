@@ -1,15 +1,9 @@
 import { createStore } from "solid-js/store";
-import type {
-  ParsedBackupData,
-  RestoredBackupData,
-} from "../components/BackupBookmarks";
-import type {
-  CollectionBookmark,
-  CollectionBookmarks,
-} from "../components/CollectionBookmarks";
+import type { ParsedBackupData } from "../components/BackupBookmarks";
+import type { CollectionBookmarks } from "../components/CollectionBookmarks";
 import type { Favorite } from "../components/Favorites";
-import type { BackupCollection, Collection } from "../components/StateStore";
-import { type Effect, handleEffect } from "./Effects";
+import type { Collection } from "../components/StateStore";
+import { handleEffect } from "./Effects";
 import { type AppEvent, handleEvent } from "./Events";
 
 export interface CollectionFetchState {
@@ -32,6 +26,7 @@ export interface AppState {
   importBackupDone: boolean;
   backupFileInputRef: HTMLInputElement | undefined;
   mostRecentlyUpdatedCollections: Favorite[];
+  importBrowserBookmarks: ImportBrowserBookmarks;
 }
 
 export type ActiveTab = "collections" | "favorites";
@@ -54,6 +49,12 @@ export function createStateStore(initialState?: AppState) {
     importBackupDone: false,
     backupFileInputRef: undefined,
     mostRecentlyUpdatedCollections: [],
+    importBrowserBookmarks: {
+      isImporting: false,
+      collections: [],
+      currentExpandedCollections: new Set<string>(),
+      browserBookmarksOpen: false,
+    },
   };
   let state: AppState;
 
@@ -72,6 +73,17 @@ export function createStateStore(initialState?: AppState) {
 }
 const { bookmarksStore, setBookmarksStore } = createStateStore();
 
+export interface ImportBrowserBookmarks {
+  isImporting: boolean;
+  collections: Collection[];
+  currentExpandedCollections: Set<string>;
+  browserBookmarksOpen: boolean;
+}
+
+export interface BackupState {
+  merging: boolean;
+}
+
 export function dispatch(
   event: AppEvent,
   storeInstance?: ReturnType<typeof createStateStore>,
@@ -80,36 +92,6 @@ export function dispatch(
   if (effect) {
     handleEffect(effect, storeInstance);
   }
-}
-
-export function mapBackupDatesToJavascriptDate(
-  backupData: RestoredBackupData,
-): ParsedBackupData {
-  const mapCollections = (backupCollection: BackupCollection): Collection => {
-    const collectionBookmarks: CollectionBookmark[] =
-      backupCollection.items.map((bookmark) => {
-        const createdAt = new Date(Date.parse(bookmark.createdAt));
-        const updatedAt = new Date(Date.parse(bookmark.updatedAt));
-        return { ...bookmark, createdAt, updatedAt };
-      });
-
-    const subcollections = backupCollection.subcollections.map(mapCollections);
-    const createdAt = new Date(Date.parse(backupCollection.createdAt));
-    const updatedAt = new Date(Date.parse(backupCollection.updatedAt));
-    return {
-      ...backupCollection,
-      items: collectionBookmarks,
-      subcollections,
-      createdAt,
-      updatedAt,
-    };
-  };
-  const parsedCollections = backupData.collections.map(mapCollections);
-
-  return {
-    ...backupData,
-    collections: parsedCollections,
-  };
 }
 
 // Helper function to normalize URLs for comparison

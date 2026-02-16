@@ -35,7 +35,6 @@ interface CollectionItemProps {
   selectedCollectionId?: string;
   onDeleteCollection?: (id: string, name: string) => void;
   expandedPath: string[];
-  setCurrentExpandedCollections: (path: string[]) => void;
   currentExpandedCollections: string[];
 }
 
@@ -144,9 +143,6 @@ function CollectionItem(props: CollectionItemProps) {
                       selectedCollectionId={props.selectedCollectionId}
                       onDeleteCollection={props.onDeleteCollection}
                       expandedPath={[...props.expandedPath, subcollection.id]}
-                      setCurrentExpandedCollections={
-                        props.setCurrentExpandedCollections
-                      }
                       currentExpandedCollections={
                         props.currentExpandedCollections
                       }
@@ -164,14 +160,8 @@ function CollectionItem(props: CollectionItemProps) {
 
 interface CollectionsProps {
   selectedCollectionId?: string;
-  onSelectCollection?: (
-    id: Collection,
-    currentExpandedCollections: string[],
-  ) => void;
-  onDeleteCollection?: (id: string) => void;
   collections: Collection[];
   path: string[];
-  setCurrentExpandedCollections: (path: string[]) => void;
   currentExpandedCollections: string[];
 }
 
@@ -190,7 +180,12 @@ export default function Collections(props: CollectionsProps) {
   const handleConfirmDelete = () => {
     const toDelete = collectionToDelete();
     if (toDelete) {
-      props.onDeleteCollection?.(toDelete.id);
+      dispatch({
+        type: "DELETE_COLLECTION",
+        payload: {
+          collectionId: toDelete.id,
+        },
+      });
       setDeleteModalOpen(false);
       setCollectionToDelete(null);
     }
@@ -214,9 +209,6 @@ export default function Collections(props: CollectionsProps) {
                 selectedCollectionId={props.selectedCollectionId}
                 onDeleteCollection={handleDeleteClick}
                 expandedPath={[...props.path, collection.id]}
-                setCurrentExpandedCollections={
-                  props.setCurrentExpandedCollections
-                }
                 currentExpandedCollections={props.currentExpandedCollections}
               />
             </li>

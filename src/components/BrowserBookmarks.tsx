@@ -1,192 +1,16 @@
-import { createSignal, For, Show, createResource, Suspense } from "solid-js";
-import { Collection } from "./StateStore";
-import { CollectionBookmark } from "./CollectionBookmarks";
+import { For, Show, Suspense } from "solid-js";
+import {
+  bookmarksStore,
+  dispatch,
+  setBookmarksStore,
+} from "../Store/Collections";
+import type { Collection } from "./StateStore";
 
-interface BrowserBookmarksProps {
-  onClose: () => void;
-  collections: Collection[];
-  onImportCollections: (browserCollections: Collection[]) => Promise<void>;
-}
-
-export default function BrowserBookmarks(props: BrowserBookmarksProps) {
-  const [importing, setImporting] = createSignal(false);
-  // Fetch browser bookmarks
-  const fetchBrowserBookmarks = async (_source: any, _options: any) => {
-    try {
-      const bookmarkTree = await browser.bookmarks.getTree();
-      const rootNode = bookmarkTree[0];
-
-      if (!rootNode || !rootNode.children) {
-        // TODO: maybe show an error toast
-        return;
-      }
-
-      const convertedCollections: Collection[] = [];
-
-      // Convert each top-level folder to a collection
-      for (const child of rootNode.children) {
-        const collection = convertToCollection(child);
-        if (collection) {
-          convertedCollections.push(collection);
-        }
-      }
-
-      return convertedCollections;
-    } catch (err) {
-      // TODO: show an error toast
-      console.error("Failed to fetch browser bookmarks:", err);
-    }
-  };
-
-  const [collections, _object] = createResource(fetchBrowserBookmarks);
-  const [currentExpandedCollections, setCurrentExpandedCollections] =
-    createSignal<Set<String>>(new Set([]));
-
-  // Convert browser bookmark tree to Collection format
-  const convertToCollection = (
-    node: browser.bookmarks.BookmarkTreeNode,
-  ): Collection | undefined => {
-    if (node.type === "separator") {
-      return undefined;
-    }
-
-    const items: CollectionBookmark[] = [];
-    const subcollections: Collection[] = [];
-
-    if (node.children) {
-      for (const child of node.children) {
-        if (child.type === "separator") {
-          continue;
-        }
-
-        // It's a bookmark if it has a URL
-        if (child.url) {
-          items.push({
-            id: child.id,
-            title: child.title,
-            url: child.url,
-            iconUrl: undefined, // Browser bookmarks don't typically include favicons in the API
-            createdAt: child.dateAdded ? new Date(child.dateAdded) : new Date(),
-            updatedAt: child.dateGroupModified
-              ? new Date(child.dateGroupModified)
-              : new Date(),
-          });
-        } else {
-          // It's a folder
-          const subCollection = convertToCollection(child);
-          if (subCollection) {
-            subcollections.push(subCollection);
-          }
-        }
-      }
-    }
-
-    return {
-      id: node.id,
-      name: node.title,
-      items,
-      subcollections,
-      createdAt: node.dateAdded ? new Date(node.dateAdded) : new Date(),
-      updatedAt: node.dateGroupModified
-        ? new Date(node.dateGroupModified)
-        : new Date(),
-    };
-  };
-
-  // Toggle folder expansion
-  const toggleFolder = (folderId: string) => {
-    const expanded = currentExpandedCollections();
-    if (expanded.has(folderId)) {
-      expanded.delete(folderId);
-    } else {
-      expanded.add(folderId);
-    }
-    setCurrentExpandedCollections(new Set(expanded));
-  };
-
-  // Calculate total bookmark count for a collection
-  const getTotalBookmarkCount = (collection: Collection): number => {
-    let count = collection.items.length;
-    for (const sub of collection.subcollections) {
-      count += getTotalBookmarkCount(sub);
-    }
-    return count;
-  };
-
-  interface CollectionItemProps {
-    collection: Collection;
-  }
-
-  // Render collection item (similar to Collections component)
-  const CollectionItem = (props: CollectionItemProps) => {
-    const isExpanded = () =>
-      currentExpandedCollections().has(props.collection.id);
-    const hasChildren = () =>
-      props.collection.subcollections.length > 0 ||
-      props.collection.items.length > 0;
-    const totalItems = () => getTotalBookmarkCount(props.collection);
-
-    return (
-      <div class="w-full">
-        <div
-          class="flex items-center py-2 px-4 cursor-pointer transition-colors duration-200 hover:bg-gray-600 hover:text-white"
-          onClick={() => hasChildren() && toggleFolder(props.collection.id)}
-        >
-          <span class="w-5 text-xs text-gray-600 hover:text-white mr-2 flex items-center justify-center">
-            <Show when={hasChildren()}>{isExpanded() ? "▼" : "▶"}</Show>
-          </span>
-          <span class="flex-1 font-medium text-gray-800 hover:text-white">
-            {props.collection.name}
-          </span>
-          <span class="text-xs ml-2 text-gray-600 hover:text-white">
-            ({totalItems()})
-          </span>
-        </div>
-
-        <Show when={isExpanded()}>
-          <div class="bg-black/[0.02]">
-            {/* Render bookmarks */}
-            <For each={props.collection.items}>
-              {(bookmark) => {
-                const baseUrl = bookmark.url ? new URL(bookmark.url) : null;
-                return (
-                  <div class="flex items-center py-1 px-4 text-sm pl-8">
-                    <span class="w-5 mr-2">📄</span>
-                    <div class="flex-1 min-w-0">
-                      <a
-                        class="link link-info link-hover truncate block"
-                        href={bookmark.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {bookmark.title}
-                      </a>
-                      <div class="text-xs text-gray-500 truncate">
-                        {baseUrl?.host}
-                      </div>
-                    </div>
-                  </div>
-                );
-              }}
-            </For>
-
-            {/* Render subcollections */}
-            <div class="pl-8">
-              <For each={props.collection.subcollections}>
-                {(subcollection) => (
-                  <CollectionItem collection={subcollection} />
-                )}
-              </For>
-            </div>
-          </div>
-        </Show>
-      </div>
-    );
-  };
-
+export default function BrowserBookmarks() {
   // Calculate total bookmarks available for import
   const getTotalImportableBookmarks = () => {
-    const browserCollections = collections();
+    const browserCollections =
+      bookmarksStore.importBrowserBookmarks.collections;
     if (!browserCollections) return 0;
 
     let total = 0;
@@ -200,21 +24,10 @@ export default function BrowserBookmarks(props: BrowserBookmarksProps) {
   };
 
   // Handle importing browser bookmarks
-  const handleImportBookmarks = async () => {
-    const browserCollections = collections();
-    if (!browserCollections || browserCollections.length === 0) {
-      return;
-    }
-
-    setImporting(true);
-    try {
-      await props.onImportCollections(browserCollections);
-    } catch (error) {
-      console.error("Failed to import bookmarks:", error);
-      // Error handling is done in the parent component
-    } finally {
-      setImporting(false);
-    }
+  const handleImportBookmarks = () => {
+    dispatch({
+      type: "IMPORT_BROWSER_BOOKMARKS",
+    });
   };
 
   return (
@@ -224,7 +37,13 @@ export default function BrowserBookmarks(props: BrowserBookmarksProps) {
         <div class="flex items-center justify-between p-4 border-b border-gray-300">
           <h2 class="text-xl font-semibold text-gray-800">Browser Bookmarks</h2>
           <button
-            onClick={props.onClose}
+            type="button"
+            onClick={() => {
+              setBookmarksStore("importBrowserBookmarks", {
+                ...bookmarksStore.importBrowserBookmarks,
+                browserBookmarksOpen: false,
+              });
+            }}
             class="btn btn-ghost btn-sm btn-circle"
             aria-label="Close"
           >
@@ -239,10 +58,16 @@ export default function BrowserBookmarks(props: BrowserBookmarksProps) {
             skipped automatically. Collections with matching names will be
             merged together.
           </p>
-          <Show when={collections()}>
+          <Show
+            when={bookmarksStore.importBrowserBookmarks.collections.length > 0}
+            fallback={
+              <p class="text-sm text-blue-600 mt-2">No bookmarks found.</p>
+            }
+          >
             <p class="text-sm text-blue-600 mt-2">
               Found {getTotalImportableBookmarks()} bookmarks across{" "}
-              {collections()?.length || 0} collections.
+              {bookmarksStore.importBrowserBookmarks.collections.length}{" "}
+              collections.
             </p>
           </Show>
         </div>
@@ -258,7 +83,7 @@ export default function BrowserBookmarks(props: BrowserBookmarksProps) {
               }
             >
               <div class="py-2 h-full">
-                <For each={collections()}>
+                <For each={bookmarksStore.importBrowserBookmarks.collections}>
                   {(collection) => <CollectionItem collection={collection} />}
                 </For>
               </div>
@@ -268,17 +93,31 @@ export default function BrowserBookmarks(props: BrowserBookmarksProps) {
 
         {/* Footer */}
         <div class="p-4 border-t border-gray-300 flex justify-between">
-          <button onClick={props.onClose} class="btn btn-primary">
+          <button
+            type="button"
+            onClick={() => {
+              setBookmarksStore("importBrowserBookmarks", {
+                ...bookmarksStore.importBrowserBookmarks,
+                browserBookmarksOpen: false,
+              });
+            }}
+            class="btn btn-primary"
+          >
             Close
           </button>
           <button
+            type="button"
             onClick={handleImportBookmarks}
             class="btn btn-primary"
             disabled={
-              !collections() || collections()?.length === 0 || importing()
+              bookmarksStore.importBrowserBookmarks.collections.length === 0 ||
+              bookmarksStore.importBrowserBookmarks.isImporting
             }
           >
-            <Show when={importing()} fallback="Import Bookmarks">
+            <Show
+              when={bookmarksStore.importBrowserBookmarks.isImporting}
+              fallback="Import Bookmarks"
+            >
               <span class="loading loading-spinner loading-sm mr-2"></span>
               Importing...
             </Show>
@@ -288,3 +127,89 @@ export default function BrowserBookmarks(props: BrowserBookmarksProps) {
     </dialog>
   );
 }
+
+interface CollectionItemProps {
+  collection: Collection;
+}
+
+const getTotalBookmarkCount = (collection: Collection): number => {
+  let count = collection.items.length;
+  for (const sub of collection.subcollections) {
+    count += getTotalBookmarkCount(sub);
+  }
+  return count;
+};
+
+const CollectionItem = (props: CollectionItemProps) => {
+  const isExpanded = () =>
+    bookmarksStore.importBrowserBookmarks.currentExpandedCollections.has(
+      props.collection.id,
+    );
+  const hasChildren = () =>
+    props.collection.subcollections.length > 0 ||
+    props.collection.items.length > 0;
+  const totalItems = () => getTotalBookmarkCount(props.collection);
+
+  return (
+    <div class="w-full">
+      <div
+        class="flex items-center py-2 px-4 cursor-pointer transition-colors duration-200 hover:bg-gray-600 hover:text-white"
+        onClick={() => {
+          hasChildren() &&
+            dispatch({
+              type: "TOGGLE_BROWSER_FOLDER",
+              payload: {
+                folderId: props.collection.id,
+              },
+            });
+        }}
+      >
+        <span class="w-5 text-xs text-gray-600 hover:text-white mr-2 flex items-center justify-center">
+          <Show when={hasChildren()}>{isExpanded() ? "▼" : "▶"}</Show>
+        </span>
+        <span class="flex-1 font-medium text-gray-800 hover:text-white">
+          {props.collection.name}
+        </span>
+        <span class="text-xs ml-2 text-gray-600 hover:text-white">
+          ({totalItems()})
+        </span>
+      </div>
+
+      <Show when={isExpanded()}>
+        <div class="bg-black/[0.02]">
+          {/* Render bookmarks */}
+          <For each={props.collection.items}>
+            {(bookmark) => {
+              const baseUrl = bookmark.url ? new URL(bookmark.url) : null;
+              return (
+                <div class="flex items-center py-1 px-4 text-sm pl-8">
+                  <span class="w-5 mr-2">📄</span>
+                  <div class="flex-1 min-w-0">
+                    <a
+                      class="link link-info link-hover truncate block"
+                      href={bookmark.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {bookmark.title}
+                    </a>
+                    <div class="text-xs text-gray-500 truncate">
+                      {baseUrl?.host}
+                    </div>
+                  </div>
+                </div>
+              );
+            }}
+          </For>
+
+          {/* Render subcollections */}
+          <div class="pl-8">
+            <For each={props.collection.subcollections}>
+              {(subcollection) => <CollectionItem collection={subcollection} />}
+            </For>
+          </div>
+        </div>
+      </Show>
+    </div>
+  );
+};

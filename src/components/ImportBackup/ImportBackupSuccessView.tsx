@@ -1,5 +1,6 @@
+import { dispatch } from "../../Store/Collections";
+
 interface ImportBackupSuccessViewProps {
-  setImportBackupDone: (value: boolean) => void;
   openBackupFilePicker: () => void;
 }
 
@@ -29,7 +30,11 @@ export function ImportBackupSuccessView(props: ImportBackupSuccessViewProps) {
         <button
           type="button"
           onClick={() => {
-            props.setImportBackupDone(false);
+            // props.setImportBackupDone(false);
+            dispatch({
+              type: "SET_IMPORT_BACKUP_DONE",
+              payload: false,
+            });
             props.openBackupFilePicker();
           }}
           class="btn btn-secondary"

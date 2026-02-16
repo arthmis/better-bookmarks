@@ -1,6 +1,11 @@
+import { unwrap } from "solid-js/store";
+import type {
+  ParsedBackupData,
+  RestoredBackupData,
+} from "../components/BackupBookmarks";
 import type { CollectionBookmark } from "../components/CollectionBookmarks";
 import type { Favorite } from "../components/Favorites";
-import type { Collection } from "../components/StateStore";
+import type { BackupCollection, Collection } from "../components/StateStore";
 import { generateId } from "../utils";
 import type { ActiveTab, createStateStore } from "./Collections";
 import {
@@ -81,6 +86,52 @@ export type DELETE_COLLECTION = {
   };
 };
 
+export type RESTORE_BACKUP = {
+  type: "RESTORE_BACKUP";
+  payload: {
+    backupData: ParsedBackupData;
+  };
+};
+
+export type SET_BACKUP_DATA = {
+  type: "SET_BACKUP_DATA";
+  payload: {
+    backupData: RestoredBackupData | undefined;
+  };
+};
+
+export type SET_IS_IMPORT_BACKUP_TAB = {
+  type: "SET_IS_IMPORT_BACKUP_TAB";
+  payload: true;
+};
+
+export type SET_IMPORT_BACKUP_DONE = {
+  type: "SET_IMPORT_BACKUP_DONE";
+  payload: boolean;
+};
+
+export type TOGGLE_BROWSER_FOLDER = {
+  type: "TOGGLE_BROWSER_FOLDER";
+  payload: {
+    folderId: string;
+  };
+};
+
+export type LOAD_BROWSER_BOOKMARKS = {
+  type: "LOAD_BROWSER_BOOKMARKS";
+};
+
+export type INITIALIZE_BROWSER_BOOKMARKS = {
+  type: "INITIALIZE_BROWSER_BOOKMARKS";
+  payload: {
+    browserCollections: Collection[];
+  };
+};
+
+export type IMPORT_BROWSER_BOOKMARKS = {
+  type: "IMPORT_BROWSER_BOOKMARKS";
+};
+
 export function handleEvent(
   event: AppEvent,
   storeInstance?: ReturnType<typeof createStateStore>,
@@ -131,9 +182,17 @@ export function handleEvent(
 
       if (store.selectedCollectionId === undefined) {
         setStore("collections", [...store.collections, newCollection]);
+        const rawCollections = unwrap(store.collections);
         return {
           type: "SET_COLLECTIONS",
-          payload: { collections: [...store.collections, newCollection] },
+          payload: {
+            collections: rawCollections,
+            backupData: {
+              collections: rawCollections,
+              exportDate: new Date().toISOString(),
+              version: "1.2.0",
+            },
+          },
         };
       }
 
@@ -164,9 +223,17 @@ export function handleEvent(
           newCollection,
         );
         setStore("collections", updatedCollection);
+        const rawCollections = unwrap(store.collections);
         return {
           type: "SET_COLLECTIONS",
-          payload: { collections: updatedCollection },
+          payload: {
+            collections: rawCollections,
+            backupData: {
+              collections: rawCollections,
+              exportDate: new Date().toISOString(),
+              version: "1.2.0",
+            },
+          },
         };
       } catch (error) {
         console.error("Failed to add or update collection:", error);
@@ -364,15 +431,14 @@ export function handleEvent(
       try {
         const updatedCollection = updateCollections(store.collections);
         setStore("collections", updatedCollection);
+        const rawCollections = unwrap(store.collections);
         return {
           type: "SET_COLLECTIONS",
           payload: {
-            collections: updatedCollection,
-            favorites: store.mostRecentlyUpdatedCollections,
+            collections: rawCollections,
+            favorites: unwrap(store.mostRecentlyUpdatedCollections),
             backupData: {
-              collections: store.collections,
-              mostRecentlyUpdatedCollections:
-                store.mostRecentlyUpdatedCollections,
+              collections: rawCollections,
               exportDate: new Date().toISOString(),
               version: "1.2.0",
             },
@@ -459,10 +525,16 @@ export function handleEvent(
             store.currentExpandedCollections.toSpliced(idIndex),
           );
 
+          const rawCollections = unwrap(store.collections);
           return {
             type: "SET_COLLECTIONS",
             payload: {
-              collections: updatedCollections,
+              collections: rawCollections,
+              backupData: {
+                collections: rawCollections,
+                exportDate: new Date().toISOString(),
+                version: "1.2.0",
+              },
             },
           };
         }
@@ -471,6 +543,117 @@ export function handleEvent(
         // showErrorToast("Failed to delete collection. Please try again.");
       }
       break;
+    }
+    case "RESTORE_BACKUP": {
+      const { backupData } = event.payload;
+      const mergedCollections = mergeCollections(
+        bookmarksStore.collections,
+        backupData.collections,
+      );
+      setStore("collections", mergedCollections);
+
+      setStore("selectedCollectionId", undefined);
+      setStore("selectedFavoriteId", undefined);
+      setStore("collectionBookmarks", { title: "", bookmarks: [] });
+
+      console.log("Successfully merged backup data");
+      setStore("backupData", undefined);
+
+      if (store.isImportBackupTab) {
+        setStore("importBackupDone", true);
+      }
+      const rawCollections = unwrap(store.collections);
+      return {
+        type: "SET_COLLECTIONS",
+        payload: {
+          collections: rawCollections,
+          favorites: unwrap(store.mostRecentlyUpdatedCollections),
+          backupData: {
+            collections: rawCollections,
+            exportDate: new Date().toISOString(),
+            version: "1.2.0",
+          },
+        },
+      };
+    }
+    case "SET_BACKUP_DATA": {
+      const { backupData } = event.payload;
+      if (backupData) {
+        const parsedBackupData = mapBackupDatesToJavascriptDate(backupData);
+        setStore("backupData", parsedBackupData);
+      }
+      break;
+    }
+    case "SET_IS_IMPORT_BACKUP_TAB": {
+      setStore("isImportBackupTab", event.payload);
+      break;
+    }
+    case "SET_IMPORT_BACKUP_DONE": {
+      setStore("importBackupDone", event.payload);
+      break;
+    }
+    case "LOAD_BROWSER_BOOKMARKS": {
+      setStore("importBrowserBookmarks", {
+        ...store.importBrowserBookmarks,
+        browserBookmarksOpen: true,
+        isImporting: true,
+      });
+
+      return {
+        type: "LOAD_BROWSER_BOOKMARKS",
+      };
+    }
+    case "TOGGLE_BROWSER_FOLDER": {
+      const { folderId } = event.payload;
+
+      const expanded = store.importBrowserBookmarks.currentExpandedCollections;
+      if (expanded.has(folderId)) {
+        expanded.delete(folderId);
+      } else {
+        expanded.add(folderId);
+      }
+
+      setStore("importBrowserBookmarks", {
+        ...store.importBrowserBookmarks,
+        currentExpandedCollections: new Set(expanded),
+      });
+      break;
+    }
+    case "INITIALIZE_BROWSER_BOOKMARKS": {
+      const { browserCollections } = event.payload;
+
+      setStore("importBrowserBookmarks", {
+        ...store.importBrowserBookmarks,
+        isImporting: false,
+        collections: browserCollections,
+      });
+      break;
+    }
+    case "IMPORT_BROWSER_BOOKMARKS": {
+      const mergedCollections = mergeCollections(
+        bookmarksStore.collections,
+        bookmarksStore.importBrowserBookmarks.collections,
+      );
+
+      setStore("collections", mergedCollections);
+      setStore("importBrowserBookmarks", {
+        isImporting: false,
+        collections: [],
+        currentExpandedCollections: new Set<string>(),
+        browserBookmarksOpen: false,
+      });
+
+      return {
+        type: "SET_COLLECTIONS",
+        payload: {
+          collections: mergedCollections,
+          backupData: {
+            collections: store.collections,
+            exportDate: new Date().toISOString(),
+            version: "1.2.0",
+          },
+        },
+      };
     }
   }
 }
@@ -597,6 +780,36 @@ export const mergeCollections = (
   return mergedCollections;
 };
 
+export function mapBackupDatesToJavascriptDate(
+  backupData: RestoredBackupData,
+): ParsedBackupData {
+  const mapCollections = (backupCollection: BackupCollection): Collection => {
+    const collectionBookmarks: CollectionBookmark[] =
+      backupCollection.items.map((bookmark) => {
+        const createdAt = new Date(Date.parse(bookmark.createdAt));
+        const updatedAt = new Date(Date.parse(bookmark.updatedAt));
+        return { ...bookmark, createdAt, updatedAt };
+      });
+
+    const subcollections = backupCollection.subcollections.map(mapCollections);
+    const createdAt = new Date(Date.parse(backupCollection.createdAt));
+    const updatedAt = new Date(Date.parse(backupCollection.updatedAt));
+    return {
+      ...backupCollection,
+      items: collectionBookmarks,
+      subcollections,
+      createdAt,
+      updatedAt,
+    };
+  };
+  const parsedCollections = backupData.collections.map(mapCollections);
+
+  return {
+    ...backupData,
+    collections: parsedCollections,
+  };
+}
+
 export type AppEvent =
   | INSERT_COLLECTION
   | SELECT_COLLECTION
@@ -607,4 +820,12 @@ export type AppEvent =
   | INITIALIZE_APP_STATE
   | SET_ACTIVE_TAB
   | SELECT_FAVORITE
-  | DELETE_COLLECTION;
+  | DELETE_COLLECTION
+  | RESTORE_BACKUP
+  | SET_BACKUP_DATA
+  | SET_IS_IMPORT_BACKUP_TAB
+  | SET_IMPORT_BACKUP_DONE
+  | TOGGLE_BROWSER_FOLDER
+  | LOAD_BROWSER_BOOKMARKS
+  | INITIALIZE_BROWSER_BOOKMARKS
+  | IMPORT_BROWSER_BOOKMARKS;

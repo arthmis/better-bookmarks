@@ -1,4 +1,5 @@
 import { For, Show } from "solid-js";
+import { dispatch } from "../Store/Collections";
 
 export interface Favorite {
   id: string;
@@ -8,7 +9,6 @@ export interface Favorite {
 interface FavoritesProps {
   favorites: Favorite[];
   selectedFavoriteId?: string;
-  onSelectFavorite: (favoriteId: string) => void;
 }
 
 export default function Favorites(props: FavoritesProps) {
@@ -39,7 +39,12 @@ export default function Favorites(props: FavoritesProps) {
                     "bg-secondary text-white":
                       props.selectedFavoriteId === favorite.id,
                   }}
-                  onClick={() => props.onSelectFavorite(favorite.id)}
+                  onClick={() => {
+                    dispatch({
+                      type: "SELECT_FAVORITE",
+                      payload: { favoriteId: favorite.id },
+                    });
+                  }}
                 >
                   <span class="w-5 text-xs text-gray-600 hover:text-white mr-3 flex items-center justify-center">
                     ⭐

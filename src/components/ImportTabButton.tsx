@@ -1,9 +1,8 @@
-import { ActiveTab, dispatch } from "../Store/Collections";
+import { type ActiveTab, dispatch } from "../Store/Collections";
 
 interface ImportTabButtonProps {
   selectedCollectionId?: string;
   selectedFavoriteId?: string;
-  onImportTabToFavorite: () => Promise<void>;
   activeTab: ActiveTab;
 }
 

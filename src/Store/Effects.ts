@@ -1,5 +1,6 @@
 import type { BackgroundScriptResponse } from "../background_script_types";
 import type { BackupData } from "../components/BackupBookmarks";
+import type { CollectionBookmark } from "../components/CollectionBookmarks";
 import type { Favorite } from "../components/Favorites";
 import type { Collection } from "../components/StateStore";
 import {
@@ -27,6 +28,10 @@ export type IMPORT_CURRENT_TABS = {
 
 export type LOAD_APP_STATE = {
   type: "LOAD_APP_STATE";
+};
+
+export type LOAD_BROWSER_BOOKMARKS = {
+  type: "LOAD_BROWSER_BOOKMARKS";
 };
 
 async function handleEffect(
@@ -138,8 +143,87 @@ async function handleEffect(
       }
       break;
     }
+    case "LOAD_BROWSER_BOOKMARKS": {
+      try {
+        const bookmarkTree = await browser.bookmarks.getTree();
+        const rootNode = bookmarkTree[0];
+
+        if (!rootNode || !rootNode.children) {
+          // TODO: maybe show an error toast
+          return;
+        }
+
+        const convertedCollections: Collection[] = [];
+
+        // Convert each top-level folder to a collection
+        for (const child of rootNode.children) {
+          const collection = convertToCollection(child);
+          if (collection) {
+            convertedCollections.push(collection);
+          }
+        }
+
+        handleEvent({
+          type: "INITIALIZE_BROWSER_BOOKMARKS",
+          payload: { browserCollections: convertedCollections },
+        });
+      } catch (err) {
+        // TODO: show an error toast
+        console.error("Failed to fetch browser bookmarks:", err);
+      }
+    }
   }
 }
+
+const convertToCollection = (
+  node: browser.bookmarks.BookmarkTreeNode,
+): Collection | undefined => {
+  if (node.type === "separator") {
+    return undefined;
+  }
+
+  const items: CollectionBookmark[] = [];
+  const subcollections: Collection[] = [];
+
+  if (node.children) {
+    for (const child of node.children) {
+      if (child.type === "separator") {
+        continue;
+      }
+
+      // It's a bookmark if it has a URL
+      if (child.url) {
+        items.push({
+          id: child.id,
+          title: child.title,
+          url: child.url,
+          iconUrl: undefined, // Browser bookmarks don't typically include favicons in the API
+          createdAt: child.dateAdded ? new Date(child.dateAdded) : new Date(),
+          updatedAt: child.dateGroupModified
+            ? new Date(child.dateGroupModified)
+            : new Date(),
+        });
+      } else {
+        // It's a folder
+        const subCollection = convertToCollection(child);
+        if (subCollection) {
+          subcollections.push(subCollection);
+        }
+      }
+    }
+  }
+
+  return {
+    id: node.id,
+    name: node.title,
+    items,
+    subcollections,
+    createdAt: node.dateAdded ? new Date(node.dateAdded) : new Date(),
+    updatedAt: node.dateGroupModified
+      ? new Date(node.dateGroupModified)
+      : new Date(),
+  };
+};
 
 export async function exportBackup(
   backupData: BackupData,
@@ -173,5 +257,9 @@ export async function exportBackup(
   }
 }
 
-export type Effect = SET_COLLECTIONS | IMPORT_CURRENT_TABS | LOAD_APP_STATE;
+export type Effect =
+  | SET_COLLECTIONS
+  | IMPORT_CURRENT_TABS
+  | LOAD_APP_STATE
+  | LOAD_BROWSER_BOOKMARKS;
 export { handleEffect };

@@ -1,4 +1,5 @@
 import { createMemo, For, Show } from "solid-js";
+import { dispatch } from "../Store/Collections";
 
 export interface CollectionBookmarks {
   title: string;
@@ -16,7 +17,6 @@ export interface CollectionBookmark {
 
 interface CollectionBookmarksProps {
   collection: CollectionBookmarks;
-  handleDeleteBookmark: (id: string) => void;
 }
 
 export default function CollectionBookmarksComponent(
@@ -86,7 +86,14 @@ export default function CollectionBookmarksComponent(
                   <button
                     type="button"
                     aria-label="Delete Bookmark"
-                    onClick={() => props.handleDeleteBookmark(bookmark.id)}
+                    onClick={() => {
+                      dispatch({
+                        type: "DELETE_BOOKMARK",
+                        payload: {
+                          bookmarkId: bookmark.id,
+                        },
+                      });
+                    }}
                     class="btn btn-square btn-ghost"
                   >
                     <img src="/assets/trash.svg" alt="" />

@@ -5,16 +5,20 @@ export default function AddCollectionButton() {
     <button
       type="button"
       onClick={() => {
-        const now = new Date();
-        dispatch({
-          type: "INSERT_COLLECTION",
-          payload: {
-            name: "New Collection",
-            collectionId: crypto.randomUUID(),
-            createdAt: now,
-            updatedAt: now,
-          },
-        });
+        const name = prompt("Enter collection name:");
+        if (name?.trim()) {
+          const sanitizedName = name.trim();
+          const now = new Date();
+          dispatch({
+            type: "INSERT_COLLECTION",
+            payload: {
+              name: sanitizedName,
+              collectionId: crypto.randomUUID(),
+              createdAt: now,
+              updatedAt: now,
+            },
+          });
+        }
       }}
       class="btn btn-soft"
     >
