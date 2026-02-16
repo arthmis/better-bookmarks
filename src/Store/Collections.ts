@@ -364,6 +364,22 @@ export function handleEvent(
 
       break;
     }
+    case "LOAD_APP_STATE": {
+      return {
+        type: "LOAD_APP_STATE",
+      };
+    }
+    case "INITIALIZE_APP_STATE": {
+      const { collections, mostRecentlyUpdatedCollections, fetchState } =
+        event.payload;
+      setStore("collections", collections);
+      setStore(
+        "mostRecentlyUpdatedCollections",
+        mostRecentlyUpdatedCollections,
+      );
+      setStore("fetchDataState", fetchState);
+      break;
+    }
   }
   return undefined;
 }
@@ -429,6 +445,34 @@ async function handleEffect(
               console.error(`error storing favorites: ${err}`);
             });
         }
+      }
+      break;
+    }
+    case "LOAD_APP_STATE": {
+      try {
+        const data = await browser.storage.local.get([
+          "collections",
+          "mostRecentlyUpdatedCollections",
+        ]);
+        handleEvent(
+          {
+            type: "INITIALIZE_APP_STATE",
+            payload: {
+              collections: data.collections || [],
+              mostRecentlyUpdatedCollections:
+                data.mostRecentlyUpdatedCollections || [],
+              fetchState: {
+                status: "success",
+              },
+            },
+          },
+          store,
+        );
+      } catch (error) {
+        console.error(error);
+        // setFetchDataState({
+        //   status: "error",
+        //   error: new Error("Failed to fetch collections"),
       }
       break;
     }

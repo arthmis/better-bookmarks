@@ -16,4 +16,8 @@ export type IMPORT_CURRENT_TABS = {
   };
 };
 
-export type Effect = SET_COLLECTIONS | IMPORT_CURRENT_TABS;
+export type LOAD_APP_STATE = {
+  type: "LOAD_APP_STATE";
+};
+
+export type Effect = SET_COLLECTIONS | IMPORT_CURRENT_TABS | LOAD_APP_STATE;

@@ -1,3 +1,7 @@
+import { Favorite } from "../components/Favorites";
+import { Collection } from "../components/StateStore";
+import { CollectionFetchState } from "./Collections";
+
 export type INSERT_COLLECTION = {
   type: "INSERT_COLLECTION";
   payload: {
@@ -35,9 +39,24 @@ export type DELETE_BOOKMARK = {
   };
 };
 
+export type LOAD_APP_STATE = {
+  type: "LOAD_APP_STATE";
+};
+
+export type INITIALIZE_APP_STATE = {
+  type: "INITIALIZE_APP_STATE";
+  payload: {
+    collections: Collection[];
+    mostRecentlyUpdatedCollections: Favorite[];
+    fetchState: CollectionFetchState;
+  };
+};
+
 export type AppEvent =
   | INSERT_COLLECTION
   | SELECT_COLLECTION
   | DELETE_BOOKMARK
   | GET_CURRENT_TABS
-  | IMPORT_TABS;
+  | IMPORT_TABS
+  | LOAD_APP_STATE
+  | INITIALIZE_APP_STATE;
