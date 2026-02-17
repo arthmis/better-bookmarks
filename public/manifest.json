@@ -10,6 +10,10 @@
     "default_title": "Better Bookmarks"
   },
 
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; upgrade-insecure-requests;"
+  },
+
   "background": {
     "scripts": ["background.js"]
   },
