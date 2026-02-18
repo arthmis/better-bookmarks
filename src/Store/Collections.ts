@@ -27,6 +27,10 @@ export interface AppState {
   backupFileInputRef: HTMLInputElement | undefined;
   mostRecentlyUpdatedCollections: Favorite[];
   importBrowserBookmarks: ImportBrowserBookmarks;
+  searchResults: {
+    title: string;
+    url: string;
+  }[];
 }
 
 export type ActiveTab = "collections" | "favorites";
@@ -55,6 +59,7 @@ export function createStateStore(initialState?: AppState) {
       currentExpandedCollections: new Set<string>(),
       browserBookmarksOpen: false,
     },
+    searchResults: [],
   };
   let state: AppState;
 

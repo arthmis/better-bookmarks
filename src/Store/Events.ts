@@ -132,6 +132,27 @@ export type IMPORT_BROWSER_BOOKMARKS = {
   type: "IMPORT_BROWSER_BOOKMARKS";
 };
 
+export type SEARCH = {
+  type: "SEARCH";
+  payload: {
+    query: string;
+  };
+};
+
+export type SEARCH_RESULTS = {
+  type: "SEARCH_RESULTS";
+  payload: {
+    results: {
+      title: string;
+      url: string;
+    }[];
+  };
+};
+
+export type LOAD_SEARCH_INDEX = {
+  type: "LOAD_SEARCH_INDEX";
+};
+
 export function handleEvent(
   event: AppEvent,
   storeInstance?: ReturnType<typeof createStateStore>,
@@ -655,6 +676,26 @@ export function handleEvent(
         },
       };
     }
+    case "SEARCH": {
+      const { query } = event.payload;
+      return {
+        type: "SEARCH",
+        payload: {
+          query,
+        },
+      };
+    }
+    case "SEARCH_RESULTS": {
+      const { results } = event.payload;
+      setStore("searchResults", results);
+      break;
+    }
+
+    case "LOAD_SEARCH_INDEX": {
+      return {
+        type: "LOAD_SEARCH_INDEX",
+      };
+    }
   }
 }
 
@@ -828,4 +869,7 @@ export type AppEvent =
   | TOGGLE_BROWSER_FOLDER
   | LOAD_BROWSER_BOOKMARKS
   | INITIALIZE_BROWSER_BOOKMARKS
-  | IMPORT_BROWSER_BOOKMARKS;
+  | IMPORT_BROWSER_BOOKMARKS
+  | SEARCH
+  | SEARCH_RESULTS
+  | LOAD_SEARCH_INDEX;

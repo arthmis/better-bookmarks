@@ -1,4 +1,4 @@
-import { Match, onMount, Show, Switch } from "solid-js";
+import { createSignal, Match, onMount, Show, Switch } from "solid-js";
 import AddCollectionButton from "./components/AddCollectionButton";
 import BackupBookmarks, {
   type RestoredBackupData,
@@ -12,12 +12,15 @@ import { ImportBackupView } from "./components/ImportBackup/ImportBackupView";
 import ImportTabButton from "./components/ImportTabButton";
 import Collections from "./components/StateStore";
 import { bookmarksStore, dispatch } from "./Store/Collections";
+import { FromWorkerMessage, searchWorker } from "./worker/worker_messages";
 
 export default function App() {
   let backupFileInputRef: HTMLInputElement | undefined;
 
   // Detect if opened in a tab for backup import
   onMount(() => {
+    // 1. Fetch from extension storage
+    // handle being launched in a tab
     const params = new URLSearchParams(window.location.search);
     if (params.get("importBackup") === "true") {
       dispatch({
@@ -30,7 +33,7 @@ export default function App() {
 
   dispatch({ type: "LOAD_APP_STATE" });
 
-  // Function to merge browser bookmarks with existing collections
+  const [searchQuery, setSearchQuery] = createSignal("");
 
   const handleBackupFileSelect = async (e: Event) => {
     const file = (e.target as HTMLInputElement).files?.[0];
@@ -155,48 +158,68 @@ export default function App() {
 
               {/* Right panel that shows bookmarks and buttons */}
               <div class="flex flex-col flex-1 p-5 w-full h-full">
-                <div class="flex flex-row mb-5 justify-evenly items-center">
-                  <AddCollectionButton />
-                  <ImportTabButton
-                    selectedCollectionId={bookmarksStore.selectedCollectionId}
-                    selectedFavoriteId={bookmarksStore.selectedFavoriteId}
-                    activeTab={bookmarksStore.activeTab}
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    console.log("submitting", searchQuery());
+                    searchWorker.postMessage({
+                      type: "QUERY_SEARCH",
+                      query: searchQuery(),
+                    });
+                  }}
+                >
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    onInput={(e) =>
+                      setSearchQuery((e.target as HTMLInputElement).value)
+                    }
                   />
-                  <div class="dropdown dropdown-bottom dropdown-end">
-                    <button type="button" class="btn btn-ghost m-1">
-                      <img
-                        src="/assets/horizontal-dots.svg"
-                        alt="Extra Options"
-                      />
-                    </button>
-                    <div class="dropdown-content card card-sm bg-base-100 z-1 w-64 shadow-md flex flex-col gap-2 p-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          dispatch({
-                            type: "LOAD_BROWSER_BOOKMARKS",
-                          });
-                        }}
-                        class="btn btn-secondary"
-                      >
-                        <span class="text-sm">🔖</span>
-                        Import Browser Bookmarks
+                </form>
+                <div class="flex flex-col">
+                  <div class="flex flex-row mb-5 justify-evenly items-center">
+                    <AddCollectionButton />
+                    <ImportTabButton
+                      selectedCollectionId={bookmarksStore.selectedCollectionId}
+                      selectedFavoriteId={bookmarksStore.selectedFavoriteId}
+                      activeTab={bookmarksStore.activeTab}
+                    />
+                    <div class="dropdown dropdown-bottom dropdown-end">
+                      <button type="button" class="btn btn-ghost m-1">
+                        <img
+                          src="/assets/horizontal-dots.svg"
+                          alt="Extra Options"
+                        />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          // Open the extension in a new tab with importBackup flag
-                          // because the popup closes when a file dialog opens
-                          const extensionUrl = browser.runtime.getURL(
-                            "index.html?importBackup=true",
-                          );
-                          browser.tabs.create({ url: extensionUrl });
-                        }}
-                        class="btn btn-secondary"
-                      >
-                        <span class="text-sm">📂</span>
-                        Import Backup File
-                      </button>
+                      <div class="dropdown-content card card-sm bg-base-100 z-1 w-64 shadow-md flex flex-col gap-2 p-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            dispatch({
+                              type: "LOAD_BROWSER_BOOKMARKS",
+                            });
+                          }}
+                          class="btn btn-secondary"
+                        >
+                          <span class="text-sm">🔖</span>
+                          Import Browser Bookmarks
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // Open the extension in a new tab with importBackup flag
+                            // because the popup closes when a file dialog opens
+                            const extensionUrl = browser.runtime.getURL(
+                              "index.html?importBackup=true",
+                            );
+                            browser.tabs.create({ url: extensionUrl });
+                          }}
+                          class="btn btn-secondary"
+                        >
+                          <span class="text-sm">📂</span>
+                          Import Backup File
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

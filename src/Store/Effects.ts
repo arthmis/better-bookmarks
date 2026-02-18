@@ -3,6 +3,7 @@ import type { BackupData } from "../components/BackupBookmarks";
 import type { CollectionBookmark } from "../components/CollectionBookmarks";
 import type { Favorite } from "../components/Favorites";
 import type { Collection } from "../components/StateStore";
+import { searchWorker } from "../worker/worker_messages";
 import {
   bookmarksStore,
   type createStateStore,
@@ -32,6 +33,17 @@ export type LOAD_APP_STATE = {
 
 export type LOAD_BROWSER_BOOKMARKS = {
   type: "LOAD_BROWSER_BOOKMARKS";
+};
+
+export type SEARCH = {
+  type: "SEARCH";
+  payload: {
+    query: string;
+  };
+};
+
+export type LOAD_SEARCH_INDEX = {
+  type: "LOAD_SEARCH_INDEX";
 };
 
 async function handleEffect(
@@ -171,6 +183,31 @@ async function handleEffect(
         // TODO: show an error toast
         console.error("Failed to fetch browser bookmarks:", err);
       }
+      break;
+    }
+    case "SEARCH": {
+      const { query } = effect.payload;
+      searchWorker.postMessage({ type: "SEARCH", query });
+      break;
+    }
+    case "LOAD_SEARCH_INDEX": {
+      // todo load data from indexedDb or extension storage
+      const testData = [`${"some title"}\0${"https://example.com"}`];
+
+      // if (!myBookmarks || !Array.isArray(myBookmarks)) return;
+
+      // 2. Efficiently flatten to: "Title\0URL\nTitle\0URL..."
+      // Null byte (\0) separates fields, Newline (\n) separates entries
+      // const flattened = myBookmarks.map((b) => `${b.title}\0${b.url}`).join("\n");
+      const flattened = testData.join("\n");
+
+      const buffer = new TextEncoder().encode(flattened);
+
+      // 3. Transfer ownership to worker (Zero-copy)
+      searchWorker.postMessage({ type: "BUILD_INDEX", data: buffer }, [
+        buffer.buffer,
+      ]);
+      break;
     }
   }
 }
@@ -261,5 +298,7 @@ export type Effect =
   | SET_COLLECTIONS
   | IMPORT_CURRENT_TABS
   | LOAD_APP_STATE
-  | LOAD_BROWSER_BOOKMARKS;
+  | LOAD_BROWSER_BOOKMARKS
+  | SEARCH
+  | LOAD_SEARCH_INDEX;
 export { handleEffect };

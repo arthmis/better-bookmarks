@@ -1,46 +1,3 @@
-import SearchWorker from "./worker.ts?worker";
-
-type QueryMessage = {
-  type: "QUERY_SEARCH";
-  query: string;
-};
-let searchWorker: Worker;
-
-type SearchWorkerMessage = QueryMessage;
-browser.runtime.onInstalled.addListener((details) => {
-  console.log(details);
-  searchWorker = new SearchWorker();
-
-  searchWorker.addEventListener("message", (event) => {
-    console.log(`Received message from worker: ${event.data}`);
-    console.log(event);
-
-    if (event.data.message === "wasm INITIALIZED") {
-      console.log("web worker is ready");
-    }
-
-    if (event.data.type === "SEARCH_RESULTS") {
-      browser.runtime.sendMessage({
-        type: "SEARCH_RESULTS",
-        results: event.data.results,
-      });
-    }
-  });
-
-  searchWorker.onerror = (err) => {
-    console.error("Worker Error:", err);
-  };
-
-  searchWorker.postMessage({
-    msg: "from background script",
-  });
-});
-
-// const searchWorker = new SearchWorker();
-// searchWorker.postMessage({
-//   msg: "from background script",
-// });
-
 browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (
     message.type === "export-backup" ||
@@ -82,14 +39,5 @@ browser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       sendResponse({ success: false, error: String(error) });
       return false;
     }
-  }
-
-  if (message.type === "QUERY_SEARCH") {
-    // Forward the search request to the Worker
-    searchWorker.postMessage({ type: "SEARCH", query: message.query });
-
-    // Note: Since Worker communication is async, you'll likely want to
-    // use a Promise or a separate listener to send the response back to the popup.
-    return true;
   }
 });
