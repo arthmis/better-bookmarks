@@ -11,12 +11,20 @@
   },
 
   "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; upgrade-insecure-requests;"
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; upgrade-insecure-requests;"
   },
 
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["background.js"],
+    "type": "module"
   },
+
+  "web_accessible_resources": [
+    {
+      "resources": ["*.js", "*.wasm"],
+      "matches": ["<all_urls>"]
+    }
+  ],
 
   "permissions": ["activeTab", "storage", "tabs", "bookmarks", "downloads"],
   "browser_specific_settings": {
