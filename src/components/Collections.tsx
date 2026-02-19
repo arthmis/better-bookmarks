@@ -2,6 +2,7 @@ import { createSignal, For, Show } from "solid-js";
 import type { CollectionBookmark } from "./CollectionBookmarks";
 import DeleteCollectionModal from "./DeleteCollectionModal";
 import { dispatch } from "../Store/Collections";
+import AddCollectionButton from "./AddCollectionButton";
 
 interface BackupCollection {
   id: string;
@@ -196,25 +197,32 @@ export default function Collections(props: CollectionsProps) {
     setCollectionToDelete(null);
   };
   return (
-    <div class="w-full h-full bg-gray-100 border-gray-300 overflow-auto font-sans rounded-lg">
-      <div class="p-4 border-b border-gray-300 bg-white sticky top-0 z-10">
-        <h3 class="m-0 text-lg font-semibold text-gray-800">Collections</h3>
+    <div class="flex flex-col justify-between w-full h-full bg-gray-100 border-gray-300 overflow-auto font-sans rounded-lg">
+      <div>
+        <div class="p-4 border-b border-gray-300 bg-white sticky top-0 z-10">
+          <h3 class="m-0 text-lg font-semibold text-gray-800">Collections</h3>
+        </div>
+        <div class="w-full bg-gray-100 border-gray-300 overflow-auto font-sans rounded-lg">
+          <ul class="py-2">
+            <For each={props.collections}>
+              {(collection) => (
+                <li>
+                  <CollectionItem
+                    collection={collection}
+                    selectedCollectionId={props.selectedCollectionId}
+                    onDeleteCollection={handleDeleteClick}
+                    expandedPath={[...props.path, collection.id]}
+                    currentExpandedCollections={
+                      props.currentExpandedCollections
+                    }
+                  />
+                </li>
+              )}
+            </For>
+          </ul>
+        </div>
       </div>
-      <ul class="py-2">
-        <For each={props.collections}>
-          {(collection) => (
-            <li>
-              <CollectionItem
-                collection={collection}
-                selectedCollectionId={props.selectedCollectionId}
-                onDeleteCollection={handleDeleteClick}
-                expandedPath={[...props.path, collection.id]}
-                currentExpandedCollections={props.currentExpandedCollections}
-              />
-            </li>
-          )}
-        </For>
-      </ul>
+      <AddCollectionButton />
 
       <DeleteCollectionModal
         isOpen={deleteModalOpen()}

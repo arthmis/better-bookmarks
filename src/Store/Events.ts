@@ -5,7 +5,7 @@ import type {
 } from "../components/BackupBookmarks";
 import type { CollectionBookmark } from "../components/CollectionBookmarks";
 import type { Favorite } from "../components/Favorites";
-import type { BackupCollection, Collection } from "../components/StateStore";
+import type { BackupCollection, Collection } from "../components/Collections";
 import { generateId } from "../utils";
 import type { ActiveTab, createStateStore } from "./Collections";
 import {

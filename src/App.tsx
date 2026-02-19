@@ -10,7 +10,7 @@ import Favorites from "./components/Favorites";
 import { ImportBackupSuccessView } from "./components/ImportBackup/ImportBackupSuccessView";
 import { ImportBackupView } from "./components/ImportBackup/ImportBackupView";
 import ImportTabButton from "./components/ImportTabButton";
-import Collections from "./components/StateStore";
+import Collections from "./components/Collections";
 import { bookmarksStore, dispatch } from "./Store/Collections";
 import { FromWorkerMessage, searchWorker } from "./worker/worker_messages";
 
@@ -178,7 +178,6 @@ export default function App() {
                 </form>
                 <div class="flex flex-col">
                   <div class="flex flex-row mb-5 justify-evenly items-center">
-                    <AddCollectionButton />
                     <ImportTabButton
                       selectedCollectionId={bookmarksStore.selectedCollectionId}
                       selectedFavoriteId={bookmarksStore.selectedFavoriteId}

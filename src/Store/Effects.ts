@@ -2,7 +2,7 @@ import type { BackgroundScriptResponse } from "../background_script_types";
 import type { BackupData } from "../components/BackupBookmarks";
 import type { CollectionBookmark } from "../components/CollectionBookmarks";
 import type { Favorite } from "../components/Favorites";
-import type { Collection } from "../components/StateStore";
+import type { Collection } from "../components/Collections";
 import { searchWorker } from "../worker/worker_messages";
 import {
   bookmarksStore,

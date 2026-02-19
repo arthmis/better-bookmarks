@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from "@solidjs/testing-library";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import BrowserBookmarks from "./BrowserBookmarks";
-import { Collection } from "./StateStore";
+import { Collection } from "./Collections";
 
 // Mock browser bookmarks API
 const mockBrowserBookmarks = [

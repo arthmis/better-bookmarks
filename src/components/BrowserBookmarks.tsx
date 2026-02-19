@@ -4,7 +4,7 @@ import {
   dispatch,
   setBookmarksStore,
 } from "../Store/Collections";
-import type { Collection } from "./StateStore";
+import type { Collection } from "./Collections";
 
 export default function BrowserBookmarks() {
   // Calculate total bookmarks available for import

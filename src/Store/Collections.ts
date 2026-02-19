@@ -2,7 +2,7 @@ import { createStore } from "solid-js/store";
 import type { ParsedBackupData } from "../components/BackupBookmarks";
 import type { CollectionBookmarks } from "../components/CollectionBookmarks";
 import type { Favorite } from "../components/Favorites";
-import type { Collection } from "../components/StateStore";
+import type { Collection } from "../components/Collections";
 import { handleEffect } from "./Effects";
 import { type AppEvent, handleEvent } from "./Events";
 

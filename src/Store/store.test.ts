@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { AppState, createStateStore, handleEvent } from "./Collections";
-import { Collection } from "../components/StateStore";
+import { Collection } from "../components/Collections";
 import { CollectionBookmark } from "../components/CollectionBookmarks";
 
 describe("Store", () => {
