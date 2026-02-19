@@ -10,7 +10,21 @@ type BuildIndex = {
   data: Uint8Array;
 };
 
-export type FromBackgroundScriptMessage = QueryMessage | BuildIndex;
+type AddBookmarks = {
+  type: "ADD_BOOKMARKS";
+  data: Uint8Array;
+};
+
+type RemoveBookmarks = {
+  type: "REMOVE_BOOKMARKS";
+  id: string;
+};
+
+export type FromAppMessage =
+  | QueryMessage
+  | BuildIndex
+  | AddBookmarks
+  | RemoveBookmarks;
 
 type WorkerReady = {
   type: "WORKER_READY";

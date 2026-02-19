@@ -10,6 +10,7 @@ import {
   setBookmarksStore,
 } from "./Collections";
 import { handleEvent } from "./Events";
+import { IndexedBookmark, replaceAll } from "../search_index_db";
 
 export type SET_COLLECTIONS = {
   type: "SET_COLLECTIONS";
@@ -44,6 +45,9 @@ export type SEARCH = {
 
 export type LOAD_SEARCH_INDEX = {
   type: "LOAD_SEARCH_INDEX";
+  payload: {
+    collections: Collection[];
+  };
 };
 
 async function handleEffect(
@@ -191,18 +195,13 @@ async function handleEffect(
       break;
     }
     case "LOAD_SEARCH_INDEX": {
-      // todo load data from indexedDb or extension storage
-      const testData = [`${"some title"}\0${"https://example.com"}`];
+      // todo load from indexeddb first and then only read all collections
+      const data = await browser.storage.local.get(["collections"]);
+      const allBookmarks = flattenCollections(data.collections || []);
 
-      // if (!myBookmarks || !Array.isArray(myBookmarks)) return;
+      await replaceAll(allBookmarks);
 
-      // 2. Efficiently flatten to: "Title\0URL\nTitle\0URL..."
-      // Null byte (\0) separates fields, Newline (\n) separates entries
-      // const flattened = myBookmarks.map((b) => `${b.title}\0${b.url}`).join("\n");
-      const flattened = testData.join("\n");
-
-      const buffer = new TextEncoder().encode(flattened);
-
+      const buffer = encodeForWorker(allBookmarks);
       // 3. Transfer ownership to worker (Zero-copy)
       searchWorker.postMessage({ type: "BUILD_INDEX", data: buffer }, [
         buffer.buffer,
@@ -210,6 +209,33 @@ async function handleEffect(
       break;
     }
   }
+}
+
+function flattenCollections(collections: Collection[]): IndexedBookmark[] {
+  const result: IndexedBookmark[] = [];
+
+  function walk(cols: Collection[]) {
+    for (const collection of cols) {
+      for (const item of collection.items) {
+        result.push({
+          id: item.id,
+          title: item.title,
+          url: item.url,
+        });
+      }
+      walk(collection.subcollections);
+    }
+  }
+
+  walk(collections);
+  return result;
+}
+
+function encodeForWorker(bookmarks: IndexedBookmark[]): Uint8Array {
+  const flattened = bookmarks
+    .map((bookmark) => `${bookmark.id}\0${bookmark.title}\0${bookmark.url}`)
+    .join("\n");
+  return new TextEncoder().encode(flattened);
 }
 
 const convertToCollection = (

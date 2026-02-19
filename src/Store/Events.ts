@@ -687,6 +687,7 @@ export function handleEvent(
     }
     case "SEARCH_RESULTS": {
       const { results } = event.payload;
+      console.log(results);
       setStore("searchResults", results);
       break;
     }
@@ -694,6 +695,9 @@ export function handleEvent(
     case "LOAD_SEARCH_INDEX": {
       return {
         type: "LOAD_SEARCH_INDEX",
+        payload: {
+          collections: store.collections,
+        },
       };
     }
   }

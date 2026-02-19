@@ -48,7 +48,7 @@ impl SearchEngine {
             inner: Fuse {
                 location: 0,
                 distance: 100,
-                threshold: 0.6,
+                threshold: 0.4,
                 max_pattern_length: 32,
                 is_case_sensitive: false,
                 tokenize: false,
@@ -59,24 +59,32 @@ impl SearchEngine {
 
     pub fn load_dataset(&mut self, buffer: &[u8]) {
         let Ok(content) = std::str::from_utf8(buffer) else {
-            // todo console log here
+            console::error_1(
+                &"loading data set failed at turning bytes into string"
+                    .to_string()
+                    .into(),
+            );
             return;
         };
 
         let bookmarks = content.lines().into_iter().filter_map(|line| {
-            if let Some((title, url)) = line.split_once('\0') {
-                let bookmark = Bookmark {
-                    id: uuid::Uuid::new_v4().to_string(),
-                    title: title.to_string(),
-                    url: url.to_string(),
-                };
-                console::log_2(&bookmark.title.clone().into(), &bookmark.url.clone().into());
+            let mut components = line.split("\0");
+            let Some(id) = components.next() else {
+                return None;
+            };
+            let Some(title) = components.next() else {
+                return None;
+            };
+            let Some(url) = components.next() else {
+                return None;
+            };
+            let bookmark = Bookmark {
+                id: id.to_string(),
+                title: title.to_string(),
+                url: url.to_string(),
+            };
 
-                return Some(bookmark);
-            }
-
-            // todo console log here
-            None
+            Some(bookmark)
         });
 
         self.data_set = bookmarks.collect();
@@ -100,5 +108,40 @@ impl SearchEngine {
 
         let output_string = results.join("\n");
         return output_string.into_bytes();
+    }
+
+    pub fn add_entries(&mut self, buffer: &[u8]) {
+        let Ok(content) = std::str::from_utf8(buffer) else {
+            // todo console log here
+            return;
+        };
+
+        let bookmarks = content.lines().into_iter().filter_map(|line| {
+            let mut components = line.split('\0');
+            let Some(id) = components.next() else {
+                return None;
+            };
+            let Some(title) = components.next() else {
+                return None;
+            };
+            let Some(url) = components.next() else {
+                return None;
+            };
+            let bookmark = Bookmark {
+                id: id.to_string(),
+                title: title.to_string(),
+                url: url.to_string(),
+            };
+
+            console::log_2(&bookmark.title.clone().into(), &bookmark.url.clone().into());
+
+            Some(bookmark)
+        });
+
+        self.data_set.extend(bookmarks);
+    }
+
+    pub fn remove_entry(&mut self, id: &str) {
+        self.data_set.retain(|bookmark| bookmark.id != id);
     }
 }
