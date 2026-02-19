@@ -158,31 +158,8 @@ export default function App() {
 
               {/* Right panel that shows bookmarks and buttons */}
               <div class="flex flex-col flex-1 p-5 w-full h-full">
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    console.log("submitting", searchQuery());
-                    searchWorker.postMessage({
-                      type: "QUERY_SEARCH",
-                      query: searchQuery(),
-                    });
-                  }}
-                >
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    onInput={(e) =>
-                      setSearchQuery((e.target as HTMLInputElement).value)
-                    }
-                  />
-                </form>
                 <div class="flex flex-col">
                   <div class="flex flex-row mb-5 justify-evenly items-center">
-                    <ImportTabButton
-                      selectedCollectionId={bookmarksStore.selectedCollectionId}
-                      selectedFavoriteId={bookmarksStore.selectedFavoriteId}
-                      activeTab={bookmarksStore.activeTab}
-                    />
                     <div class="dropdown dropdown-bottom dropdown-end">
                       <button type="button" class="btn btn-ghost m-1">
                         <img
@@ -198,7 +175,7 @@ export default function App() {
                               type: "LOAD_BROWSER_BOOKMARKS",
                             });
                           }}
-                          class="btn btn-secondary"
+                          class="btn"
                         >
                           <span class="text-sm">🔖</span>
                           Import Browser Bookmarks
@@ -213,13 +190,56 @@ export default function App() {
                             );
                             browser.tabs.create({ url: extensionUrl });
                           }}
-                          class="btn btn-secondary"
+                          class="btn"
                         >
                           <span class="text-sm">📂</span>
                           Import Backup File
                         </button>
                       </div>
                     </div>
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        console.log("submitting", searchQuery());
+                        searchWorker.postMessage({
+                          type: "QUERY_SEARCH",
+                          query: searchQuery(),
+                        });
+                      }}
+                    >
+                      <label class="input">
+                        <svg
+                          class="h-[1em] opacity-50"
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                        >
+                          <title>search icon</title>
+                          <g
+                            stroke-linejoin="round"
+                            stroke-linecap="round"
+                            stroke-width="2.5"
+                            fill="none"
+                            stroke="currentColor"
+                          >
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.3-4.3"></path>
+                          </g>
+                        </svg>
+                        <input
+                          type="search"
+                          placeholder="Search..."
+                          class="w-full"
+                          onInput={(e) =>
+                            setSearchQuery((e.target as HTMLInputElement).value)
+                          }
+                        />
+                      </label>
+                    </form>
+                    <ImportTabButton
+                      selectedCollectionId={bookmarksStore.selectedCollectionId}
+                      selectedFavoriteId={bookmarksStore.selectedFavoriteId}
+                      activeTab={bookmarksStore.activeTab}
+                    />
                   </div>
                 </div>
 
