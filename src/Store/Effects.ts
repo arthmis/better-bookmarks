@@ -10,7 +10,7 @@ import {
   setBookmarksStore,
 } from "./Collections";
 import { handleEvent } from "./Events";
-import { IndexedBookmark, replaceAll } from "../search_index_db";
+import { getAll, IndexedBookmark, replaceAll } from "../search_index_db";
 
 export type SET_COLLECTIONS = {
   type: "SET_COLLECTIONS";
@@ -70,6 +70,14 @@ async function handleEffect(
               console.error(`error storing favorites: ${err}`);
             });
         }
+
+        const allBookmarks = flattenCollections(collections);
+        await replaceAll(allBookmarks);
+
+        const buffer = encodeForWorker(allBookmarks);
+        searchWorker.postMessage({ type: "BUILD_INDEX", data: buffer }, [
+          buffer.buffer,
+        ]);
       } catch (error) {
         // todo send the error to state
         console.error("Failed to set collections:", error);
@@ -196,16 +204,22 @@ async function handleEffect(
     }
     case "LOAD_SEARCH_INDEX": {
       // todo load from indexeddb first and then only read all collections
-      const data = await browser.storage.local.get(["collections"]);
-      const allBookmarks = flattenCollections(data.collections || []);
+      try {
+        let allBookmarks = [];
+        allBookmarks = await getAll();
+        if (allBookmarks.length === 0) {
+          const data = await browser.storage.local.get(["collections"]);
+          allBookmarks = flattenCollections(data.collections || []);
+          await replaceAll(allBookmarks);
+        }
 
-      await replaceAll(allBookmarks);
-
-      const buffer = encodeForWorker(allBookmarks);
-      // 3. Transfer ownership to worker (Zero-copy)
-      searchWorker.postMessage({ type: "BUILD_INDEX", data: buffer }, [
-        buffer.buffer,
-      ]);
+        const buffer = encodeForWorker(allBookmarks);
+        searchWorker.postMessage({ type: "BUILD_INDEX", data: buffer }, [
+          buffer.buffer,
+        ]);
+      } catch (error) {
+        console.error(error);
+      }
       break;
     }
   }
