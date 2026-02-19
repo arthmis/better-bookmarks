@@ -73,7 +73,7 @@ function CollectionItem(props: CollectionItemProps) {
         class="flex group items-center py-2 px-4 cursor-pointer transition-colors duration-200 hover:bg-gray-600 hover:text-white
         "
         classList={{
-          "bg-secondary text-white":
+          "bg-gray-400 text-white":
             props.selectedCollectionId === props.collection.id,
         }}
         onClick={(e) => {

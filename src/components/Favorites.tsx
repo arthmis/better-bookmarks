@@ -36,7 +36,7 @@ export default function Favorites(props: FavoritesProps) {
                 <div
                   class="flex items-center py-3 px-4 cursor-pointer transition-colors duration-200 hover:bg-gray-600 hover:text-white border-b border-gray-200 last:border-b-0"
                   classList={{
-                    "bg-secondary text-white":
+                    "bg-gray-400 text-white":
                       props.selectedFavoriteId === favorite.id,
                   }}
                   onClick={() => {
@@ -53,7 +53,6 @@ export default function Favorites(props: FavoritesProps) {
                     class="flex-1 font-medium transition-colors duration-200"
                     classList={{
                       "text-white": props.selectedFavoriteId === favorite.id,
-                      "text-gray-800": props.selectedFavoriteId !== favorite.id,
                     }}
                   >
                     {favorite.name}
