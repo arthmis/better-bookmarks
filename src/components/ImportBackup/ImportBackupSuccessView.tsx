@@ -30,7 +30,6 @@ export function ImportBackupSuccessView(props: ImportBackupSuccessViewProps) {
         <button
           type="button"
           onClick={() => {
-            // props.setImportBackupDone(false);
             dispatch({
               type: "SET_IMPORT_BACKUP_DONE",
               payload: false,

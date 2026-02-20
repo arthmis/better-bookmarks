@@ -602,7 +602,10 @@ export function handleEvent(
       if (backupData) {
         const parsedBackupData = mapBackupDatesToJavascriptDate(backupData);
         setStore("backupData", parsedBackupData);
+      } else {
+        setStore("backupData", undefined);
       }
+
       break;
     }
     case "SET_IS_IMPORT_BACKUP_TAB": {
