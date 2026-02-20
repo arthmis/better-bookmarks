@@ -1,3 +1,9 @@
+# Motivation
+There were some UX issues I had with Firefox's bookmarks. I wanted to have my bookmark collections at the top level. Firefox doesn't allow that to happen. There can only be `Bookmarks Toolbar`, `Bookmarks Menu`, and `Other Bookmarks`. So I have no choice but to put my collections within those folders. I also wanted allow collections to contain collections as well as bookmarks directly, though I don't know if that is really that useful of a feature. Besides that I wanted to make some improvements to search. I've opted for fuzzy search, which isn't ideal yet, but works well enough. Now it doesn't require finding an exact word when searching. Most importantly I wanted a larger cache of recently used collections. When adding a new bookmark the collections that were most recently added to were the first options, but Firefox only shows 6 of them. I've increased that limit to 15 for this extension.
+
+## Future changes
+- I want to allow reordering collections and allow moving bookmarks between collections with drag and drop ideally
+
 ## Setup
 
 You need to have Node version 21.7.3 and npm installed.
@@ -7,9 +13,16 @@ Install the dependencies:
 $ npm install # or pnpm install or yarn install
 ```
 
+You will need a [rust compiler](https://rust-lang.org/learn/get-started/) and [wasm-pack](https://drager.github.io/wasm-pack/installer/).
+Once you've installed those tools, at the project root in your terminal, `cd` into the `fuzzy_match` folder and use the command
+```
+wasm-pack build --target bundler
+```
+There should be a `pkg` folder in `fuzzy_match` directory after the build finishes. Now go back to the root directory of the project
+
 ## Building
 
-Build the project with:
+Build the extension frontend with with:
 ```
 npm run build
 ```
@@ -29,30 +42,15 @@ https://github.com/user-attachments/assets/154b513d-ede0-4b39-9602-1217212c8e62
 
 ## Backup & Restore
 
-To protect your data, Better Bookmarks includes export and import functionality:
+To protect your data, Better Bookmarks includes automatic exports and an option to import exported data. The automatic exports was added to help with backing up the bookmarks. Unfortunately I had huge data loss when I went to make updates to the extension. Firefox decided to treat the temporarily loaded extension as the same thing as the one installed and it decided they should have the same data although they should be treated differently. Somehow in that process all the bookmarks were overwritten/deleted. So I added a feature that will download all of the bookmarks every time a collection is updated. These exports are done per day. So, if you constantly update the collections over 1 day, there will only be 1 export left at the end of the day.
 
-### Export Backup
-1. Click the extension icon to open Better Bookmarks
-2. Click the three-dot menu (⋯) in the top right
-3. Select "💾 Export Backup"
-4. A JSON file will be downloaded with your collections and favorites
-
-The backup file is named `better-bookmarks-backup-YYYY-MM-DD.json` and includes:
-- All your collections and subcollections
-- All bookmarks within collections
-- Your most recently updated collections (favorites)
-- Export date and version information
 
 ### Import Backup
 1. Click the extension icon to open Better Bookmarks
-2. Click the three-dot menu (⋯) in the top right
+2. Click the three-dot menu
 3. Select "📥 Import Backup"
 4. Choose your backup JSON file
-5. Confirm the import (this will replace your current data)
+5. Confirm the import (this will merge with your current data, so there is potential for data loss)
 
-**Important:** Importing a backup will overwrite all current data. Export a backup of your current data first if you want to keep it.
-
-### Best Practices
-- Export backups regularly, especially before major changes
-- Keep backups in a safe location (cloud storage, external drive, etc.)
-- Before loading the extension temporarily for development, export a backup of your production data
+## Install extension directly
+https://better-bookmarks-artmis-dev.netlify.app/
