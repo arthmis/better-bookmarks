@@ -4,8 +4,8 @@ import type {
   RestoredBackupData,
 } from "../components/BackupBookmarks";
 import type { CollectionBookmark } from "../components/CollectionBookmarks";
-import type { Favorite } from "../components/Favorites";
 import type { BackupCollection, Collection } from "../components/Collections";
+import type { Favorite } from "../components/Favorites";
 import { generateId } from "../utils";
 import type { ActiveTab, createStateStore, SearchResult } from "./Collections";
 import {
@@ -280,7 +280,7 @@ export function handleEvent(
 
         const selectedCollection = findCollectionById(
           store.collections,
-          store.selectedCollectionId!,
+          collectionId,
         );
         if (selectedCollection) {
           setStore("collectionBookmarks", {

@@ -1,8 +1,8 @@
 import { createSignal, For, Show } from "solid-js";
-import type { BackupCollection, Collection } from "./Collections";
-import type { CollectionBookmark } from "./CollectionBookmarks";
-import { Favorite } from "./Favorites";
 import { dispatch } from "../Store/Collections";
+import type { CollectionBookmark } from "./CollectionBookmarks";
+import type { BackupCollection, Collection } from "./Collections";
+import type { Favorite } from "./Favorites";
 
 interface BackupData {
   collections: Collection[];

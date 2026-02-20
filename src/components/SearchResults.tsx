@@ -10,12 +10,7 @@ export function SearchResults(props: SearchResultsProps) {
       <ul class="list bg-base-100">
         <For
           each={props.results}
-          fallback={
-            <div class="p-4">
-              Select a collection, some tabs and add add the tabs to the
-              collection!
-            </div>
-          }
+          fallback={<div class="p-4">No results founds.</div>}
         >
           {(result) => {
             return (

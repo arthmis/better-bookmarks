@@ -1,19 +1,18 @@
 import { createSignal, Match, onMount, Show, Switch } from "solid-js";
-import AddCollectionButton from "./components/AddCollectionButton";
 import BackupBookmarks, {
   type RestoredBackupData,
 } from "./components/BackupBookmarks";
 import BrowserBookmarks from "./components/BrowserBookmarks";
 import CollectionBookmarksComponent from "./components/CollectionBookmarks";
+import Collections from "./components/Collections";
 import ErrorToast, { showErrorToast } from "./components/ErrorToast";
 import Favorites from "./components/Favorites";
 import { ImportBackupSuccessView } from "./components/ImportBackup/ImportBackupSuccessView";
 import { ImportBackupView } from "./components/ImportBackup/ImportBackupView";
 import ImportTabButton from "./components/ImportTabButton";
-import Collections from "./components/Collections";
-import { bookmarksStore, dispatch } from "./Store/Collections";
-import { FromWorkerMessage, searchWorker } from "./worker/worker_messages";
 import { SearchResults } from "./components/SearchResults";
+import { bookmarksStore, dispatch } from "./Store/Collections";
+import { searchWorker } from "./worker/worker_messages";
 
 export default function App() {
   let backupFileInputRef: HTMLInputElement | undefined;

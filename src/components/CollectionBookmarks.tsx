@@ -40,7 +40,7 @@ export default function CollectionBookmarksComponent(
             each={sortedBookmarks()}
             fallback={
               <div class="p-4">
-                Select a collection, some tabs and add add the tabs to the
+                Select a collection, some tabs and add the tabs to the
                 collection!
               </div>
             }

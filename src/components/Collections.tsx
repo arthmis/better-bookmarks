@@ -1,8 +1,8 @@
 import { createSignal, For, Show } from "solid-js";
-import type { CollectionBookmark } from "./CollectionBookmarks";
-import DeleteCollectionModal from "./DeleteCollectionModal";
 import { dispatch } from "../Store/Collections";
 import AddCollectionButton from "./AddCollectionButton";
+import type { CollectionBookmark } from "./CollectionBookmarks";
+import DeleteCollectionModal from "./DeleteCollectionModal";
 
 interface BackupCollection {
   id: string;

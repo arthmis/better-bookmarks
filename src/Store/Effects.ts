@@ -1,8 +1,9 @@
 import type { BackgroundScriptResponse } from "../background_script_types";
 import type { BackupData } from "../components/BackupBookmarks";
 import type { CollectionBookmark } from "../components/CollectionBookmarks";
-import type { Favorite } from "../components/Favorites";
 import type { Collection } from "../components/Collections";
+import type { Favorite } from "../components/Favorites";
+import { getAll, type IndexedBookmark, replaceAll } from "../search_index_db";
 import { searchWorker } from "../worker/worker_messages";
 import {
   bookmarksStore,
@@ -10,7 +11,6 @@ import {
   setBookmarksStore,
 } from "./Collections";
 import { handleEvent } from "./Events";
-import { getAll, IndexedBookmark, replaceAll } from "../search_index_db";
 
 export type SET_COLLECTIONS = {
   type: "SET_COLLECTIONS";
