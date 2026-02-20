@@ -61,7 +61,7 @@ export default function CollectionBookmarksComponent(
                       }
                     >
                       <img
-                        class="size-10 rounded-box"
+                        class="size-6 rounded-box"
                         src={bookmark.iconUrl}
                         alt=""
                       />
