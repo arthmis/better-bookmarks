@@ -3,6 +3,7 @@ There were some UX issues I had with Firefox's bookmarks. I wanted to have my bo
 
 ## Future changes
 - I want to allow reordering collections and allow moving bookmarks between collections with drag and drop ideally
+- Make aesthetic improvements and rethink the triple dot button design and location in the layout
 
 ## Setup
 
