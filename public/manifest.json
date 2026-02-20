@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Better Bookmarks",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "A bookmark manager to organize and manage your bookmarks. Easily create and delete bookmarks.",
 
   "action": {
@@ -29,7 +29,11 @@
   "permissions": ["activeTab", "storage", "tabs", "bookmarks", "downloads"],
   "browser_specific_settings": {
     "gecko": {
-      "id": "artmisdev@betterbookmarks.com"
+      "id": "artmisdev@betterbookmarks.com",
+      "data_collection_permissions": {
+        "required": [],
+        "optional": []
+      }
     }
   }
 }
