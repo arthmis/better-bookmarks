@@ -303,7 +303,10 @@ export function handleEvent(
         selectedCollectionId?: string,
       ): Collection[] =>
         collections.map((collection) => {
-          if (collection.id === selectedCollectionId) {
+          if (
+            collection.id === selectedCollectionId ||
+            collection.id === store.selectedFavoriteId
+          ) {
             const updatedItems = collection.items.filter(
               (item) => item.id !== bookmarkId,
             );
@@ -329,22 +332,23 @@ export function handleEvent(
           };
         });
 
-      try {
-        const updatedCollection = deleteBookmarkFromCollection(
-          store.collections,
-          bookmarkId,
-          store.selectedCollectionId,
-        );
-        setStore("collections", updatedCollection);
-        return {
-          type: "SET_COLLECTIONS",
-          payload: { collections: updatedCollection },
-        };
-      } catch (error) {
-        console.error("Failed to delete bookmark:", error);
-        // showErrorToast("Failed to delete bookmark. Please try again.");
-      }
-      break;
+      const updatedCollection = deleteBookmarkFromCollection(
+        store.collections,
+        bookmarkId,
+        store.selectedCollectionId,
+      );
+      setStore("collections", updatedCollection);
+      return {
+        type: "SET_COLLECTIONS",
+        payload: {
+          collections: updatedCollection,
+          backupData: {
+            collections: updatedCollection,
+            exportDate: new Date().toISOString(),
+            version: "1.2.0",
+          },
+        },
+      };
     }
     case "GET_CURRENT_TABS":
       if (store.selectedCollectionId) {
