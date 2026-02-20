@@ -1,13 +1,21 @@
+use std::collections::HashSet;
+
 use fuse_rust::{Fuse, FuseProperty, Fuseable};
 use wasm_bindgen::prelude::*;
 use web_sys::console;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, Eq)]
 struct Bookmark {
     pub id: String,
     pub title: String,
     pub url: String,
     pub icon_url: Option<String>,
+}
+
+impl PartialEq for Bookmark {
+    fn eq(&self, other: &Self) -> bool {
+        self.title == other.title && self.url == other.url
+    }
 }
 
 impl Fuseable for Bookmark {
@@ -89,8 +97,9 @@ impl SearchEngine {
 
             Some(bookmark)
         });
+        let data_set: HashSet<Bookmark> = bookmarks.collect();
 
-        self.data_set = bookmarks.collect();
+        self.data_set = data_set.into_iter().collect();
     }
 
     pub fn search(&self, query: &str) -> Vec<u8> {
