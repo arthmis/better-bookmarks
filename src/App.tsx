@@ -13,6 +13,7 @@ import ImportTabButton from "./components/ImportTabButton";
 import Collections from "./components/Collections";
 import { bookmarksStore, dispatch } from "./Store/Collections";
 import { FromWorkerMessage, searchWorker } from "./worker/worker_messages";
+import { SearchResults } from "./components/SearchResults";
 
 export default function App() {
   let backupFileInputRef: HTMLInputElement | undefined;
@@ -243,9 +244,13 @@ export default function App() {
                   </div>
                 </div>
 
-                <CollectionBookmarksComponent
-                  collection={bookmarksStore.collectionBookmarks}
-                />
+                {!bookmarksStore.searchResults ? (
+                  <CollectionBookmarksComponent
+                    collection={bookmarksStore.collectionBookmarks}
+                  />
+                ) : (
+                  <SearchResults results={bookmarksStore.searchResults} />
+                )}
               </div>
             </div>
           </Match>

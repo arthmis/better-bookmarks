@@ -48,7 +48,7 @@ export default function CollectionBookmarksComponent(
             {(bookmark) => {
               const baseUrl = new URL(bookmark.url);
               return (
-                <li class="list-row">
+                <li class="list-row hover:bg-gray-100">
                   <div class="flex items-center">
                     <Show
                       when={bookmark.iconUrl}

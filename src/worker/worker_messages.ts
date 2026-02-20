@@ -55,7 +55,6 @@ searchWorker.addEventListener(
     }
 
     if (event.data.type === "SEARCH_RESULTS") {
-      const decoder = new TextDecoder();
       if (event.data.results.length === 0) {
         dispatch({
           type: "SEARCH_RESULTS",
@@ -65,10 +64,14 @@ searchWorker.addEventListener(
         });
         return;
       }
+      const decoder = new TextDecoder();
       const stringResults = decoder.decode(event.data.results);
       const results = stringResults.split("\n").map((line) => {
-        const [title, url] = line.split("\0");
-        return { title, url };
+        const [title, url, iconUrl] = line.split("\0");
+        if (iconUrl === "") {
+          return { title, url, iconUrl: undefined };
+        }
+        return { title, url, iconUrl };
       });
       dispatch({
         type: "SEARCH_RESULTS",

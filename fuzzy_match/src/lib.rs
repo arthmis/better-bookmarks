@@ -7,6 +7,7 @@ struct Bookmark {
     pub id: String,
     pub title: String,
     pub url: String,
+    pub icon_url: Option<String>,
 }
 
 impl Fuseable for Bookmark {
@@ -51,7 +52,7 @@ impl SearchEngine {
                 threshold: 0.4,
                 max_pattern_length: 32,
                 is_case_sensitive: false,
-                tokenize: false,
+                tokenize: true,
             },
             data_set: Vec::new(),
         }
@@ -78,10 +79,12 @@ impl SearchEngine {
             let Some(url) = components.next() else {
                 return None;
             };
+            let icon_url = components.next().map(|url| url.to_string());
             let bookmark = Bookmark {
                 id: id.to_string(),
                 title: title.to_string(),
                 url: url.to_string(),
+                icon_url,
             };
 
             Some(bookmark)
@@ -98,7 +101,10 @@ impl SearchEngine {
             .filter_map(|search_result| {
                 if search_result.score < 0.5 {
                     let bookmark = &self.data_set[search_result.index];
-                    let text = format!("{}\0{}", &bookmark.url, &bookmark.title);
+                    let text = match &bookmark.icon_url {
+                        Some(url) => format!("{}\0{}\0{}", &bookmark.title, &bookmark.url, &url),
+                        None => format!("{}\0{}", &bookmark.title, &bookmark.url),
+                    };
                     return Some(text);
                 }
 
@@ -127,10 +133,12 @@ impl SearchEngine {
             let Some(url) = components.next() else {
                 return None;
             };
+            let icon_url = components.next().map(|url| url.to_string());
             let bookmark = Bookmark {
                 id: id.to_string(),
                 title: title.to_string(),
                 url: url.to_string(),
+                icon_url,
             };
 
             console::log_2(&bookmark.title.clone().into(), &bookmark.url.clone().into());

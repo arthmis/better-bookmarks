@@ -7,7 +7,7 @@ import type { CollectionBookmark } from "../components/CollectionBookmarks";
 import type { Favorite } from "../components/Favorites";
 import type { BackupCollection, Collection } from "../components/Collections";
 import { generateId } from "../utils";
-import type { ActiveTab, createStateStore } from "./Collections";
+import type { ActiveTab, createStateStore, SearchResult } from "./Collections";
 import {
   bookmarksStore,
   type CollectionFetchState,
@@ -142,10 +142,7 @@ export type SEARCH = {
 export type SEARCH_RESULTS = {
   type: "SEARCH_RESULTS";
   payload: {
-    results: {
-      title: string;
-      url: string;
-    }[];
+    results: SearchResult[];
   };
 };
 
@@ -266,6 +263,7 @@ export function handleEvent(
       const {
         payload: { collectionId, currentExpandedCollections },
       } = event;
+      setStore("searchResults", undefined);
 
       if (store.selectedCollectionId === collectionId) {
         setStore("selectedCollectionId", undefined);
@@ -500,6 +498,7 @@ export function handleEvent(
       const { favoriteId } = event.payload;
       setStore("selectedFavoriteId", favoriteId);
       setStore("selectedCollectionId", undefined);
+      setStore("searchResults", undefined);
 
       // Find and display the favorite collection's bookmarks
       const selectedCollection = findCollectionById(
@@ -678,6 +677,8 @@ export function handleEvent(
     }
     case "SEARCH": {
       const { query } = event.payload;
+      setStore("selectedCollectionId", undefined);
+      setStore("selectedFavoriteId", undefined);
       return {
         type: "SEARCH",
         payload: {

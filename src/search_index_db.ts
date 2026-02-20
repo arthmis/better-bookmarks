@@ -4,6 +4,7 @@ export interface IndexedBookmark {
   id: string; // same id as CollectionBookmark.id
   title: string;
   url: string;
+  iconUrl?: string;
 }
 
 const DB_NAME = "better-bookmarks-search";

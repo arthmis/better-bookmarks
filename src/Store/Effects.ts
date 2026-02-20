@@ -205,7 +205,7 @@ async function handleEffect(
     case "LOAD_SEARCH_INDEX": {
       // todo load from indexeddb first and then only read all collections
       try {
-        let allBookmarks = [];
+        let allBookmarks: IndexedBookmark[] = [];
         allBookmarks = await getAll();
         if (allBookmarks.length === 0) {
           const data = await browser.storage.local.get(["collections"]);
@@ -235,6 +235,7 @@ function flattenCollections(collections: Collection[]): IndexedBookmark[] {
           id: item.id,
           title: item.title,
           url: item.url,
+          iconUrl: item.iconUrl,
         });
       }
       walk(collection.subcollections);
@@ -247,7 +248,13 @@ function flattenCollections(collections: Collection[]): IndexedBookmark[] {
 
 function encodeForWorker(bookmarks: IndexedBookmark[]): Uint8Array {
   const flattened = bookmarks
-    .map((bookmark) => `${bookmark.id}\0${bookmark.title}\0${bookmark.url}`)
+    .map((bookmark) => {
+      if (bookmark.iconUrl) {
+        return `${bookmark.id}\0${bookmark.title}\0${bookmark.url}\0${bookmark.iconUrl}`;
+      }
+
+      return `${bookmark.id}\0${bookmark.title}\0${bookmark.url}`;
+    })
     .join("\n");
   return new TextEncoder().encode(flattened);
 }
@@ -305,11 +312,9 @@ const convertToCollection = (
 export async function exportBackup(
   backupData: BackupData,
 ): Promise<BackgroundScriptResponse> {
-  const { collections, mostRecentlyUpdatedCollections, exportDate, version } =
-    backupData;
+  const { collections, exportDate, version } = backupData;
   const data = {
     collections: collections,
-    mostRecentlyUpdatedCollections: mostRecentlyUpdatedCollections,
     exportDate,
     version,
   };
