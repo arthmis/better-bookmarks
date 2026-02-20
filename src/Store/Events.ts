@@ -575,6 +575,7 @@ export function handleEvent(
       setStore("selectedCollectionId", undefined);
       setStore("selectedFavoriteId", undefined);
       setStore("collectionBookmarks", { title: "", bookmarks: [] });
+      setStore("mostRecentlyUpdatedCollections", []);
 
       console.log("Successfully merged backup data");
       setStore("backupData", undefined);
@@ -587,7 +588,7 @@ export function handleEvent(
         type: "SET_COLLECTIONS",
         payload: {
           collections: rawCollections,
-          favorites: unwrap(store.mostRecentlyUpdatedCollections),
+          favorites: [],
           backupData: {
             collections: rawCollections,
             exportDate: new Date().toISOString(),
