@@ -31,8 +31,7 @@
     "gecko": {
       "id": "artmisdev@betterbookmarks.com",
       "data_collection_permissions": {
-        "required": [],
-        "optional": []
+        "required": ["none"]
       }
     }
   }
