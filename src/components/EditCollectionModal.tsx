@@ -30,10 +30,13 @@ export default function EditCollectionModal(props: EditCollectionModalProps) {
     props.onCancel();
   };
 
+  const handleSubmit = (e: SubmitEvent) => {
+    e.preventDefault();
+    handleSave();
+  };
+
   const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === "Enter" && !isSaveDisabled()) {
-      handleSave();
-    } else if (e.key === "Escape") {
+    if (e.key === "Escape") {
       handleCancel();
     }
   };
@@ -53,33 +56,30 @@ export default function EditCollectionModal(props: EditCollectionModalProps) {
 
           <h3 class="font-bold text-lg mb-4">Rename Collection</h3>
 
-          <label class="mb-2 text-sm block" for="editCollectionName">
-            Collection name
-          </label>
-          <input
-            type="text"
-            id="editCollectionName"
-            name="editCollectionName"
-            class="input input-bordered w-full mb-4"
-            value={inputValue()}
-            onInput={(e) => setInputValue((e.target as HTMLInputElement).value)}
-            onKeyDown={handleKeyDown}
-            autofocus
-          />
+          <form onSubmit={handleSubmit}>
+            <label class="mb-2 text-sm block" for="editCollectionName">
+              Collection name
+            </label>
+            <input
+              type="text"
+              id="editCollectionName"
+              name="editCollectionName"
+              class="input input-bordered w-full mb-4"
+              value={inputValue()}
+              onInput={(e) => setInputValue((e.target as HTMLInputElement).value)}
+              onKeyDown={handleKeyDown}
+              autofocus
+            />
 
-          <div class="modal-action justify-between">
-            <button type="button" class="btn" onClick={handleCancel}>
-              Cancel
-            </button>
-            <button
-              type="button"
-              class="btn btn-primary"
-              disabled={isSaveDisabled()}
-              onClick={handleSave}
-            >
-              Save
-            </button>
-          </div>
+            <div class="modal-action justify-between">
+              <button type="button" class="btn" onClick={handleCancel}>
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary" disabled={isSaveDisabled()}>
+                Save
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </Show>
