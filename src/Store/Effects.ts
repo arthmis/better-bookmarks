@@ -5,11 +5,7 @@ import type { Collection } from "../components/Collections";
 import type { Favorite } from "../components/Favorites";
 import { getAll, type IndexedBookmark, replaceAll } from "../search_index_db";
 import { searchWorker } from "../worker/worker_messages";
-import {
-  bookmarksStore,
-  type createStateStore,
-  setBookmarksStore,
-} from "./Collections";
+import { bookmarksStore, type createStateStore, setBookmarksStore } from "./Collections";
 import { handleEvent } from "./Events";
 
 export type SET_COLLECTIONS = {
@@ -75,9 +71,7 @@ async function handleEffect(
         await replaceAll(allBookmarks);
 
         const buffer = encodeForWorker(allBookmarks);
-        searchWorker.postMessage({ type: "BUILD_INDEX", data: buffer }, [
-          buffer.buffer,
-        ]);
+        searchWorker.postMessage({ type: "BUILD_INDEX", data: buffer }, [buffer.buffer]);
       } catch (error) {
         // todo send the error to state
         console.error("Failed to set collections:", error);
@@ -109,12 +103,8 @@ async function handleEffect(
         store,
       );
 
-      if (
-        setCollectionsEffect &&
-        setCollectionsEffect.type === "SET_COLLECTIONS"
-      ) {
-        const { collections, favorites, backupData } =
-          setCollectionsEffect.payload;
+      if (setCollectionsEffect && setCollectionsEffect.type === "SET_COLLECTIONS") {
+        const { collections, favorites, backupData } = setCollectionsEffect.payload;
         await browser.storage.local.set({
           collections: collections,
         });
@@ -150,8 +140,7 @@ async function handleEffect(
             type: "INITIALIZE_APP_STATE",
             payload: {
               collections: data.collections || [],
-              mostRecentlyUpdatedCollections:
-                data.mostRecentlyUpdatedCollections || [],
+              mostRecentlyUpdatedCollections: data.mostRecentlyUpdatedCollections || [],
               fetchState: {
                 status: "success",
               },
@@ -177,19 +166,11 @@ async function handleEffect(
           return;
         }
 
-        const convertedCollections: Collection[] = [];
-
-        // Convert each top-level folder to a collection
-        for (const child of rootNode.children) {
-          const collection = convertToCollection(child);
-          if (collection) {
-            convertedCollections.push(collection);
-          }
-        }
+        const flatCollections = flattenBookmarkTree(rootNode.children);
 
         handleEvent({
           type: "INITIALIZE_BROWSER_BOOKMARKS",
-          payload: { browserCollections: convertedCollections },
+          payload: { browserCollections: flatCollections },
         });
       } catch (err) {
         // TODO: show an error toast
@@ -214,9 +195,7 @@ async function handleEffect(
         }
 
         const buffer = encodeForWorker(allBookmarks);
-        searchWorker.postMessage({ type: "BUILD_INDEX", data: buffer }, [
-          buffer.buffer,
-        ]);
+        searchWorker.postMessage({ type: "BUILD_INDEX", data: buffer }, [buffer.buffer]);
       } catch (error) {
         console.error(error);
       }
@@ -259,23 +238,21 @@ function encodeForWorker(bookmarks: IndexedBookmark[]): Uint8Array {
   return new TextEncoder().encode(flattened);
 }
 
-const convertToCollection = (
-  node: browser.bookmarks.BookmarkTreeNode,
-): Collection | undefined => {
-  if (node.type === "separator") {
-    return undefined;
-  }
+const flattenBookmarkTree = (nodes: browser.bookmarks.BookmarkTreeNode[]): Collection[] => {
+  const result: Collection[] = [];
 
-  const items: CollectionBookmark[] = [];
-  const subcollections: Collection[] = [];
+  function walk(node: browser.bookmarks.BookmarkTreeNode) {
+    if (node.type === "separator" || !node.children) {
+      return;
+    }
 
-  if (node.children) {
+    const items: CollectionBookmark[] = [];
+
     for (const child of node.children) {
       if (child.type === "separator") {
         continue;
       }
 
-      // It's a bookmark if it has a URL
       if (child.url) {
         items.push({
           id: child.id,
@@ -283,35 +260,36 @@ const convertToCollection = (
           url: child.url,
           iconUrl: undefined, // Browser bookmarks don't typically include favicons in the API
           createdAt: child.dateAdded ? new Date(child.dateAdded) : new Date(),
-          updatedAt: child.dateGroupModified
-            ? new Date(child.dateGroupModified)
-            : new Date(),
+          updatedAt: child.dateGroupModified ? new Date(child.dateGroupModified) : new Date(),
         });
-      } else {
-        // It's a folder
-        const subCollection = convertToCollection(child);
-        if (subCollection) {
-          subcollections.push(subCollection);
-        }
+      }
+    }
+
+    result.push({
+      id: node.id,
+      name: node.title,
+      items,
+      subcollections: [],
+      createdAt: node.dateAdded ? new Date(node.dateAdded) : new Date(),
+      updatedAt: node.dateGroupModified ? new Date(node.dateGroupModified) : new Date(),
+    });
+
+    // Recurse into subfolders
+    for (const child of node.children) {
+      if (!child.url && child.type !== "separator") {
+        walk(child);
       }
     }
   }
 
-  return {
-    id: node.id,
-    name: node.title,
-    items,
-    subcollections,
-    createdAt: node.dateAdded ? new Date(node.dateAdded) : new Date(),
-    updatedAt: node.dateGroupModified
-      ? new Date(node.dateGroupModified)
-      : new Date(),
-  };
+  for (const node of nodes) {
+    walk(node);
+  }
+
+  return result;
 };
 
-export async function exportBackup(
-  backupData: BackupData,
-): Promise<BackgroundScriptResponse> {
+export async function exportBackup(backupData: BackupData): Promise<BackgroundScriptResponse> {
   const { collections, exportDate, version } = backupData;
   const data = {
     collections: collections,
@@ -323,11 +301,10 @@ export async function exportBackup(
     const json = JSON.stringify(data, null, 2);
     const filename = `better-bookmarks-backup-${new Date().toISOString().split("T")[0]}.json`;
 
-    const response: BackgroundScriptResponse =
-      await browser.runtime.sendMessage({
-        type: "auto-export-backup",
-        payload: { json, filename },
-      });
+    const response: BackgroundScriptResponse = await browser.runtime.sendMessage({
+      type: "auto-export-backup",
+      payload: { json, filename },
+    });
 
     if (!response.success) {
       console.error("Auto-backup failed:", response.error);
