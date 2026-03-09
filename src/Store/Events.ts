@@ -1,18 +1,11 @@
 import { unwrap } from "solid-js/store";
-import type {
-  ParsedBackupData,
-  RestoredBackupData,
-} from "../components/BackupBookmarks";
+import type { ParsedBackupData, RestoredBackupData } from "../components/BackupBookmarks";
 import type { CollectionBookmark } from "../components/CollectionBookmarks";
 import type { BackupCollection, Collection } from "../components/Collections";
 import type { Favorite } from "../components/Favorites";
 import { generateId } from "../utils";
 import type { ActiveTab, createStateStore, SearchResult } from "./Collections";
-import {
-  bookmarksStore,
-  type CollectionFetchState,
-  setBookmarksStore,
-} from "./Collections";
+import { bookmarksStore, type CollectionFetchState, setBookmarksStore } from "./Collections";
 import type { Effect } from "./Effects";
 
 export type INSERT_COLLECTION = {
@@ -86,6 +79,14 @@ export type DELETE_COLLECTION = {
   };
 };
 
+export type RENAME_COLLECTION = {
+  type: "RENAME_COLLECTION";
+  payload: {
+    collectionId: string;
+    newName: string;
+  };
+};
+
 export type RESTORE_BACKUP = {
   type: "RESTORE_BACKUP";
   payload: {
@@ -154,8 +155,10 @@ export function handleEvent(
   event: AppEvent,
   storeInstance?: ReturnType<typeof createStateStore>,
 ): Effect | undefined {
-  const { bookmarksStore: store, setBookmarksStore: setStore } =
-    storeInstance ?? { bookmarksStore, setBookmarksStore };
+  const { bookmarksStore: store, setBookmarksStore: setStore } = storeInstance ?? {
+    bookmarksStore,
+    setBookmarksStore,
+  };
 
   switch (event.type) {
     case "INSERT_COLLECTION": {
@@ -165,8 +168,7 @@ export function handleEvent(
       // Check for duplicates
       const isDuplicate = (collectionsToCheck: Collection[]): boolean => {
         return collectionsToCheck.some(
-          (collection) =>
-            collection.name.trim().toLowerCase() === normalizedName,
+          (collection) => collection.name.trim().toLowerCase() === normalizedName,
         );
       };
 
@@ -177,14 +179,8 @@ export function handleEvent(
         }
       } else {
         // Check subcollections of selected collection for duplicates
-        const selectedCollection = findCollectionById(
-          store.collections,
-          store.selectedCollectionId,
-        );
-        if (
-          selectedCollection &&
-          isDuplicate(selectedCollection.subcollections)
-        ) {
+        const selectedCollection = findCollectionById(store.collections, store.selectedCollectionId);
+        if (selectedCollection && isDuplicate(selectedCollection.subcollections)) {
           return; // Don't add duplicate
         }
       }
@@ -227,19 +223,13 @@ export function handleEvent(
           }
           return {
             ...collection,
-            subcollections: insertCollection(
-              collection.subcollections,
-              newCollection,
-            ),
+            subcollections: insertCollection(collection.subcollections, newCollection),
           };
         });
       };
 
       try {
-        const updatedCollection = insertCollection(
-          store.collections,
-          newCollection,
-        );
+        const updatedCollection = insertCollection(store.collections, newCollection);
         setStore("collections", updatedCollection);
         const rawCollections = unwrap(store.collections);
         return {
@@ -270,18 +260,12 @@ export function handleEvent(
         setStore("collectionBookmarks", { title: "", bookmarks: [] });
 
         const idIndex = currentExpandedCollections.indexOf(collectionId);
-        setStore(
-          "currentExpandedCollections",
-          currentExpandedCollections.toSpliced(idIndex),
-        );
+        setStore("currentExpandedCollections", currentExpandedCollections.toSpliced(idIndex));
       } else {
         setStore("selectedCollectionId", collectionId);
         setStore("selectedFavoriteId", undefined);
 
-        const selectedCollection = findCollectionById(
-          store.collections,
-          collectionId,
-        );
+        const selectedCollection = findCollectionById(store.collections, collectionId);
         if (selectedCollection) {
           setStore("collectionBookmarks", {
             title: selectedCollection.name,
@@ -303,13 +287,8 @@ export function handleEvent(
         selectedCollectionId?: string,
       ): Collection[] =>
         collections.map((collection) => {
-          if (
-            collection.id === selectedCollectionId ||
-            collection.id === store.selectedFavoriteId
-          ) {
-            const updatedItems = collection.items.filter(
-              (item) => item.id !== bookmarkId,
-            );
+          if (collection.id === selectedCollectionId || collection.id === store.selectedFavoriteId) {
+            const updatedItems = collection.items.filter((item) => item.id !== bookmarkId);
             const newCollection = {
               ...collection,
               items: updatedItems,
@@ -374,19 +353,14 @@ export function handleEvent(
       }
 
       // Get the selected collection to check for duplicate URLs
-      const selectedCollection = findCollectionById(
-        store.collections,
-        collectionId,
-      );
+      const selectedCollection = findCollectionById(store.collections, collectionId);
       if (!selectedCollection) {
         // showErrorToast("Selected collection not found");
         return;
       }
 
       // Get existing URLs in the selected collection
-      const existingUrls = new Set(
-        selectedCollection.items.map((item) => normalizeUrl(item.url)),
-      );
+      const existingUrls = new Set(selectedCollection.items.map((item) => normalizeUrl(item.url)));
 
       const importedBookmarks: CollectionBookmark[] = tabs
         .filter((tab) => {
@@ -482,13 +456,9 @@ export function handleEvent(
       };
     }
     case "INITIALIZE_APP_STATE": {
-      const { collections, mostRecentlyUpdatedCollections, fetchState } =
-        event.payload;
+      const { collections, mostRecentlyUpdatedCollections, fetchState } = event.payload;
       setStore("collections", collections);
-      setStore(
-        "mostRecentlyUpdatedCollections",
-        mostRecentlyUpdatedCollections,
-      );
+      setStore("mostRecentlyUpdatedCollections", mostRecentlyUpdatedCollections);
       setStore("fetchDataState", fetchState);
       break;
     }
@@ -505,10 +475,7 @@ export function handleEvent(
       setStore("searchResults", undefined);
 
       // Find and display the favorite collection's bookmarks
-      const selectedCollection = findCollectionById(
-        store.collections,
-        favoriteId,
-      );
+      const selectedCollection = findCollectionById(store.collections, favoriteId);
       if (selectedCollection) {
         setStore("collectionBookmarks", {
           title: selectedCollection.name,
@@ -542,8 +509,7 @@ export function handleEvent(
           });
 
           // Remove the deleted collection from expanded collections but keep ancestors
-          const idIndex =
-            store.currentExpandedCollections.indexOf(collectionId);
+          const idIndex = store.currentExpandedCollections.indexOf(collectionId);
           setStore(
             "currentExpandedCollections",
             store.currentExpandedCollections.toSpliced(idIndex),
@@ -568,12 +534,48 @@ export function handleEvent(
       }
       break;
     }
+    case "RENAME_COLLECTION": {
+      const { collectionId, newName } = event.payload;
+
+      const renameCollection = (collections: Collection[]): Collection[] =>
+        collections.map((collection) => {
+          if (collection.id === collectionId) {
+            return { ...collection, name: newName, updatedAt: new Date() };
+          }
+          return {
+            ...collection,
+            subcollections: renameCollection(collection.subcollections),
+          };
+        });
+
+      try {
+        const updatedCollections = renameCollection(store.collections);
+        setStore("collections", updatedCollections);
+
+        if (store.selectedCollectionId === collectionId) {
+          setStore("collectionBookmarks", "title", newName);
+        }
+
+        const rawCollections = unwrap(store.collections);
+        return {
+          type: "SET_COLLECTIONS",
+          payload: {
+            collections: rawCollections,
+            backupData: {
+              collections: rawCollections,
+              exportDate: new Date().toISOString(),
+              version: "1.2.0",
+            },
+          },
+        };
+      } catch (error) {
+        console.error(error);
+      }
+      break;
+    }
     case "RESTORE_BACKUP": {
       const { backupData } = event.payload;
-      const mergedCollections = mergeCollections(
-        bookmarksStore.collections,
-        backupData.collections,
-      );
+      const mergedCollections = mergeCollections(bookmarksStore.collections, backupData.collections);
       setStore("collections", mergedCollections);
 
       setStore("selectedCollectionId", undefined);
@@ -779,9 +781,7 @@ export const mergeCollections = (
       return !existingUrls.has(normalizeUrl(item.url));
     });
 
-    const filteredSubcollections = collection.subcollections.map(
-      filterDuplicateBookmarks,
-    );
+    const filteredSubcollections = collection.subcollections.map(filterDuplicateBookmarks);
 
     return {
       ...collection,
@@ -791,9 +791,7 @@ export const mergeCollections = (
   };
 
   // Filter browser collections and merge with existing ones
-  const filteredBrowserCollections = browserCollections.map(
-    filterDuplicateBookmarks,
-  );
+  const filteredBrowserCollections = browserCollections.map(filterDuplicateBookmarks);
 
   // Merge collections by name or add new ones
   const mergedCollections = [...existingCollections];
@@ -801,8 +799,7 @@ export const mergeCollections = (
   filteredBrowserCollections.forEach((browserCollection) => {
     // Check if a collection with the same name already exists
     const existingIndex = mergedCollections.findIndex(
-      (existing) =>
-        existing.name.toLowerCase() === browserCollection.name.toLowerCase(),
+      (existing) => existing.name.toLowerCase() === browserCollection.name.toLowerCase(),
     );
 
     if (existingIndex >= 0) {
@@ -811,18 +808,12 @@ export const mergeCollections = (
       mergedCollections[existingIndex] = {
         ...existing,
         items: [...existing.items, ...browserCollection.items],
-        subcollections: mergeCollections(
-          existing.subcollections,
-          browserCollection.subcollections,
-        ),
+        subcollections: mergeCollections(existing.subcollections, browserCollection.subcollections),
         updatedAt: new Date(),
       };
     } else {
       // Add as new collection if it has any content
-      if (
-        browserCollection.items.length > 0 ||
-        browserCollection.subcollections.length > 0
-      ) {
+      if (browserCollection.items.length > 0 || browserCollection.subcollections.length > 0) {
         mergedCollections.push({
           ...browserCollection,
           id: generateId(), // Generate new ID for imported collection
@@ -834,16 +825,13 @@ export const mergeCollections = (
   return mergedCollections;
 };
 
-export function mapBackupDatesToJavascriptDate(
-  backupData: RestoredBackupData,
-): ParsedBackupData {
+export function mapBackupDatesToJavascriptDate(backupData: RestoredBackupData): ParsedBackupData {
   const mapCollections = (backupCollection: BackupCollection): Collection => {
-    const collectionBookmarks: CollectionBookmark[] =
-      backupCollection.items.map((bookmark) => {
-        const createdAt = new Date(Date.parse(bookmark.createdAt));
-        const updatedAt = new Date(Date.parse(bookmark.updatedAt));
-        return { ...bookmark, createdAt, updatedAt };
-      });
+    const collectionBookmarks: CollectionBookmark[] = backupCollection.items.map((bookmark) => {
+      const createdAt = new Date(Date.parse(bookmark.createdAt));
+      const updatedAt = new Date(Date.parse(bookmark.updatedAt));
+      return { ...bookmark, createdAt, updatedAt };
+    });
 
     const subcollections = backupCollection.subcollections.map(mapCollections);
     const createdAt = new Date(Date.parse(backupCollection.createdAt));
@@ -875,6 +863,7 @@ export type AppEvent =
   | SET_ACTIVE_TAB
   | SELECT_FAVORITE
   | DELETE_COLLECTION
+  | RENAME_COLLECTION
   | RESTORE_BACKUP
   | SET_BACKUP_DATA
   | SET_IS_IMPORT_BACKUP_TAB

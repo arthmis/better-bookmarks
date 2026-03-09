@@ -3,6 +3,7 @@ import { dispatch } from "../Store/Collections";
 import AddCollectionButton from "./AddCollectionButton";
 import type { CollectionBookmark } from "./CollectionBookmarks";
 import DeleteCollectionModal from "./DeleteCollectionModal";
+import EditCollectionModal from "./EditCollectionModal";
 
 interface BackupCollection {
   id: string;
@@ -35,6 +36,7 @@ interface CollectionItemProps {
   collection: Collection;
   selectedCollectionId?: string;
   onDeleteCollection?: (id: string, name: string) => void;
+  onEditCollection?: (id: string, name: string) => void;
   expandedPath: string[];
   currentExpandedCollections: string[];
 }
@@ -47,8 +49,7 @@ function CollectionItem(props: CollectionItemProps) {
     props.selectedCollectionId === props.collection.id;
 
   const hasChildren = () =>
-    props.collection.subcollections.length > 0 ||
-    props.collection.items.length > 0;
+    props.collection.subcollections.length > 0 || props.collection.items.length > 0;
 
   const totalItemCount = () => {
     let count = props.collection.items.length;
@@ -73,8 +74,7 @@ function CollectionItem(props: CollectionItemProps) {
         class="flex group items-center py-2 px-4 cursor-pointer transition-colors duration-200 hover:bg-gray-600 hover:text-white
         "
         classList={{
-          "bg-gray-400 text-white":
-            props.selectedCollectionId === props.collection.id,
+          "bg-gray-400 text-white": props.selectedCollectionId === props.collection.id,
         }}
         onClick={(e) => {
           e.stopPropagation();
@@ -85,7 +85,6 @@ function CollectionItem(props: CollectionItemProps) {
               currentExpandedCollections: props.expandedPath,
             },
           });
-          // props.onSelectCollection?.(props.collection, props.expandedPath);
         }}
       >
         <span
@@ -116,13 +115,22 @@ function CollectionItem(props: CollectionItemProps) {
         </span>
         <Show when={props.selectedCollectionId === props.collection.id}>
           <button
+            type="button"
+            aria-label="Edit Collection"
+            onClick={(e) => {
+              e.stopPropagation();
+              props.onEditCollection?.(props.collection.id, props.collection.name);
+            }}
+            class="btn btn-square btn-ghost btn-xs ml-2"
+          >
+            <img src="/assets/pencil.svg" alt="" class="w-3 h-3" />
+          </button>
+          <button
+            type="button"
             aria-label="Delete Collection"
             onClick={(e) => {
               e.stopPropagation();
-              props.onDeleteCollection?.(
-                props.collection.id,
-                props.collection.name,
-              );
+              props.onDeleteCollection?.(props.collection.id, props.collection.name);
             }}
             class="btn btn-square btn-ghost btn-xs ml-2"
           >
@@ -143,10 +151,9 @@ function CollectionItem(props: CollectionItemProps) {
                       collection={subcollection}
                       selectedCollectionId={props.selectedCollectionId}
                       onDeleteCollection={props.onDeleteCollection}
+                      onEditCollection={props.onEditCollection}
                       expandedPath={[...props.expandedPath, subcollection.id]}
-                      currentExpandedCollections={
-                        props.currentExpandedCollections
-                      }
+                      currentExpandedCollections={props.currentExpandedCollections}
                     />
                   </div>
                 </li>
@@ -169,6 +176,12 @@ interface CollectionsProps {
 export default function Collections(props: CollectionsProps) {
   const [deleteModalOpen, setDeleteModalOpen] = createSignal(false);
   const [collectionToDelete, setCollectionToDelete] = createSignal<{
+    id: string;
+    name: string;
+  } | null>(null);
+
+  const [editModalOpen, setEditModalOpen] = createSignal(false);
+  const [collectionToEdit, setCollectionToEdit] = createSignal<{
     id: string;
     name: string;
   } | null>(null);
@@ -196,6 +209,31 @@ export default function Collections(props: CollectionsProps) {
     setDeleteModalOpen(false);
     setCollectionToDelete(null);
   };
+
+  const handleEditClick = (collectionId: string, collectionName: string) => {
+    setCollectionToEdit({ id: collectionId, name: collectionName });
+    setEditModalOpen(true);
+  };
+
+  const handleSaveEdit = (newName: string) => {
+    const toEdit = collectionToEdit();
+    if (toEdit) {
+      dispatch({
+        type: "RENAME_COLLECTION",
+        payload: {
+          collectionId: toEdit.id,
+          newName,
+        },
+      });
+      setEditModalOpen(false);
+      setCollectionToEdit(null);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditModalOpen(false);
+    setCollectionToEdit(null);
+  };
   return (
     <div class="flex flex-col justify-between w-full h-full bg-gray-100 border-gray-300 overflow-auto font-sans rounded-lg">
       <div>
@@ -211,10 +249,9 @@ export default function Collections(props: CollectionsProps) {
                     collection={collection}
                     selectedCollectionId={props.selectedCollectionId}
                     onDeleteCollection={handleDeleteClick}
+                    onEditCollection={handleEditClick}
                     expandedPath={[...props.path, collection.id]}
-                    currentExpandedCollections={
-                      props.currentExpandedCollections
-                    }
+                    currentExpandedCollections={props.currentExpandedCollections}
                   />
                 </li>
               )}
@@ -229,6 +266,13 @@ export default function Collections(props: CollectionsProps) {
         collectionName={collectionToDelete()?.name || ""}
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
+      />
+
+      <EditCollectionModal
+        isOpen={editModalOpen()}
+        collectionName={collectionToEdit()?.name || ""}
+        onSave={handleSaveEdit}
+        onCancel={handleCancelEdit}
       />
     </div>
   );
