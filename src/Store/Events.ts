@@ -337,7 +337,9 @@ export function handleEvent(
             collectionId: store.selectedCollectionId,
           },
         };
-      } else if (store.selectedFavoriteId) {
+      }
+
+      if (store.selectedFavoriteId) {
         return {
           type: "IMPORT_CURRENT_TABS",
           payload: {
@@ -507,6 +509,10 @@ export function handleEvent(
             title: "",
             bookmarks: [],
           });
+          const updatedFavorites = store.mostRecentlyUpdatedCollections.filter(
+            (favorite) => favorite.id !== collectionId,
+          );
+          setStore("mostRecentlyUpdatedCollections", updatedFavorites);
 
           // Remove the deleted collection from expanded collections but keep ancestors
           const idIndex = store.currentExpandedCollections.indexOf(collectionId);
@@ -516,10 +522,12 @@ export function handleEvent(
           );
 
           const rawCollections = unwrap(store.collections);
+          const rawFavorites = unwrap(store.mostRecentlyUpdatedCollections);
           return {
             type: "SET_COLLECTIONS",
             payload: {
               collections: rawCollections,
+              favorites: rawFavorites,
               backupData: {
                 collections: rawCollections,
                 exportDate: new Date().toISOString(),
