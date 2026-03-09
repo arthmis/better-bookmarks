@@ -1,34 +1,21 @@
-import { createSignal, Show } from "solid-js";
+import { Show } from "solid-js";
+import { createSignal } from "solid-js";
 
 interface DeleteCollectionModalProps {
   isOpen: boolean;
   collectionName: string;
-  onConfirm: () => void;
+  onDelete: () => void;
   onCancel: () => void;
 }
 
-export default function DeleteCollectionModal(
-  props: DeleteCollectionModalProps,
-) {
-  const [inputValue, setInputValue] = createSignal("");
-
-  const isConfirmDisabled = () => inputValue() !== props.collectionName;
-
-  const handleConfirm = () => {
-    if (!isConfirmDisabled()) {
-      props.onConfirm();
-      setInputValue(""); // Reset input after confirm
-    }
-  };
-
+export default function DeleteCollectionModal(props: DeleteCollectionModalProps) {
   const handleCancel = () => {
-    setInputValue(""); // Reset input on cancel
     props.onCancel();
   };
 
-  const handleInputChange = (e: Event) => {
-    const target = e.target as HTMLInputElement;
-    setInputValue(target.value);
+  const handleSubmit = (e: SubmitEvent) => {
+    e.preventDefault();
+    props.onDelete();
   };
 
   return (
@@ -36,6 +23,7 @@ export default function DeleteCollectionModal(
       <div class="modal modal-open">
         <div class="modal-box relative" role="dialog">
           <button
+            type="button"
             class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2"
             onClick={handleCancel}
           >
@@ -45,35 +33,20 @@ export default function DeleteCollectionModal(
           <h3 class="font-bold text-lg mb-4">Delete Collection</h3>
 
           <p class="mb-4">
-            Are you sure you want to delete the collection{" "}
-            <strong>"{props.collectionName}"</strong>? This action cannot be
-            undone.
+            Are you sure you want to delete the collection <strong>"{props.collectionName}"</strong>?
+            This action cannot be undone.
           </p>
 
-          <label class="mb-2 text-sm" for="collectionName">
-            To confirm, type the collection name exactly as shown above:
-          </label>
-          <input
-            type="text"
-            id="collectionName"
-            name="collectionName"
-            class="input input-bordered w-full mb-4"
-            value={inputValue()}
-            onInput={handleInputChange}
-          />
-
-          <div class="modal-action">
-            <button class="btn btn-ghost" onClick={handleCancel}>
-              Cancel
-            </button>
-            <button
-              class="btn btn-error"
-              disabled={isConfirmDisabled()}
-              onClick={handleConfirm}
-            >
-              Confirm Delete
-            </button>
-          </div>
+          <form onSubmit={handleSubmit}>
+            <div class="modal-action justify-between">
+              <button type="button" class="btn" onClick={handleCancel}>
+                Cancel
+              </button>
+              <button type="submit" class="btn bg-red-600 text-white border-none">
+                Delete
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </Show>

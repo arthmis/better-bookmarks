@@ -264,7 +264,7 @@ export default function Collections(props: CollectionsProps) {
       <DeleteCollectionModal
         isOpen={deleteModalOpen()}
         collectionName={collectionToDelete()?.name || ""}
-        onConfirm={handleConfirmDelete}
+        onDelete={handleConfirmDelete}
         onCancel={handleCancelDelete}
       />
 
